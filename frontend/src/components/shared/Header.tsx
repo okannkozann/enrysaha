@@ -13,9 +13,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { SidebarContent } from '@/components/shared/Sidebar';
+
 export function Header() {
   const { role, setRole } = useAppStore();
   const [fileName, setFileName] = useState<string>('');
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const updateName = () => {
@@ -35,9 +39,16 @@ export function Header() {
   return (
     <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 lg:px-8 z-10 sticky top-0">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="md:hidden">
-          <Menu className="h-5 w-5 text-slate-500" />
-        </Button>
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="md:hidden">
+              <Menu className="h-5 w-5 text-slate-500" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 border-r-0 w-64 bg-slate-900 text-slate-100">
+            <SidebarContent onLinkClick={() => setOpen(false)} />
+          </SheetContent>
+        </Sheet>
         {fileName && (
           <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-md border border-emerald-200 text-xs font-medium">
             <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />

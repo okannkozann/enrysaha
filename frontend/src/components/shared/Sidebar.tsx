@@ -14,10 +14,9 @@ import {
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 
-export function Sidebar() {
+export function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
   const pathname = usePathname();
   const role = useAppStore(state => state.role);
-
   const isOffice = role === 'YAPIM_MUHENDISI';
 
   const officeLinks = [
@@ -38,7 +37,7 @@ export function Sidebar() {
   const links = isOffice ? officeLinks : fieldLinks;
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-100 flex-shrink-0 hidden md:flex flex-col h-screen">
+    <div className="flex flex-col h-full bg-slate-900 text-slate-100">
       <div className="p-6">
         <h1 className="text-xl font-bold text-white tracking-tight">ENERYA</h1>
         <p className="text-xs text-slate-400 mt-1 uppercase tracking-wider font-semibold">Saha Yapım Takip</p>
@@ -51,6 +50,7 @@ export function Sidebar() {
             <Link
               key={link.name}
               href={link.href}
+              onClick={onLinkClick}
               className={cn(
                 "flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors",
                 isActive 
@@ -66,11 +66,19 @@ export function Sidebar() {
       </nav>
 
       <div className="p-4 border-t border-slate-800 mt-auto">
-        <Link href="/settings" className="flex items-center px-3 py-2 text-sm font-medium text-slate-300 rounded-md hover:bg-slate-800 hover:text-white transition-colors">
+        <Link href="/settings" onClick={onLinkClick} className="flex items-center px-3 py-2 text-sm font-medium text-slate-300 rounded-md hover:bg-slate-800 hover:text-white transition-colors">
           <Settings className="mr-3 h-5 w-5 text-slate-400" />
           Ayarlar
         </Link>
       </div>
+    </div>
+  );
+}
+
+export function Sidebar() {
+  return (
+    <aside className="w-64 flex-shrink-0 hidden md:flex flex-col h-screen">
+      <SidebarContent />
     </aside>
   );
 }
