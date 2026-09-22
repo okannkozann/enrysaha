@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Bell, Search, Menu, FileSpreadsheet } from 'lucide-react';
+import { Bell, Search, Menu, FileSpreadsheet, LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import {
   DropdownMenu,
@@ -17,6 +18,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { SidebarContent } from '@/components/shared/Sidebar';
 
 export function Header() {
+  const router = useRouter();
   const { role, setRole } = useAppStore();
   const [fileName, setFileName] = useState<string>('');
   const [open, setOpen] = useState(false);
@@ -68,6 +70,16 @@ export function Header() {
 
         <div className="h-6 w-px bg-slate-200 mx-1" />
 
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-slate-500 hover:text-red-600 hover:bg-red-50" 
+          onClick={() => router.push('/')} 
+          title="Çıkış Yap"
+        >
+          <LogOut className="h-5 w-5" />
+        </Button>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -101,6 +113,14 @@ export function Header() {
               className={role === 'SAHA_EKIBI' ? 'bg-slate-100' : ''}
             >
               Saha Ekibi Görünümü
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={() => router.push('/')}
+              className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Modül Seçimine Dön (Çıkış)</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

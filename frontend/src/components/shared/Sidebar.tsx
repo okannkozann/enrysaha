@@ -20,21 +20,16 @@ export function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
   const isOffice = role === 'YAPIM_MUHENDISI';
 
   const officeLinks = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Servis Kutuları', href: '/service-boxes', icon: Box },
-    { name: 'Saha Bildirimleri', href: '/field-reports', icon: CheckSquare },
-    { name: 'Ekipler', href: '/teams', icon: Users },
-    { name: 'Operasyon Haritası', href: '/map', icon: MapIcon },
-    { name: 'QR Yönetimi', href: '/qr', icon: QrCode },
-    { name: 'Raporlar', href: '/reports', icon: FileText },
+    { name: 'Dashboard', href: '/yapim/dashboard', icon: LayoutDashboard },
+    { name: 'Servis Kutuları', href: '/yapim/service-boxes', icon: Box },
+    { name: 'Saha Bildirimleri', href: '/yapim/field-reports', icon: CheckSquare },
+    { name: 'Ekipler', href: '/yapim/teams', icon: Users },
+    { name: 'Operasyon Haritası', href: '/yapim/map', icon: MapIcon },
+    { name: 'QR Yönetimi', href: '/yapim/qr', icon: QrCode },
+    { name: 'Raporlar', href: '/yapim/reports', icon: FileText },
   ];
 
-  const fieldLinks = [
-    { name: 'Saha Ana Ekran', href: '/saha/72200003', icon: LayoutDashboard },
-    { name: 'Bildirim Yap', href: '/field-reports/new', icon: CheckSquare },
-  ];
-
-  const links = isOffice ? officeLinks : fieldLinks;
+  const links = officeLinks;
 
   return (
     <div className="flex flex-col h-full bg-slate-900 text-slate-100">

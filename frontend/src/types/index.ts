@@ -3,6 +3,33 @@ export type PriorityLevel = 'Kritik' | 'Yüksek Öncelik' | 'Takip' | 'Normal';
 export type WorkType = 'PE Ana Hat' | 'ST Çelik Hat' | 'Servis Hattı' | 'Servis Kutusu' | 'Diğer';
 export type TeamStatus = 'Aktif' | 'Tamamlandı' | 'Bekliyor';
 
+export type UserRole = 'field' | 'engineer';
+
+export interface User {
+  id: string;
+  name: string;
+  role: UserRole;
+  teamId?: string;
+  teamName?: string;
+}
+
+export interface WorkSession {
+  id: string;
+  teamId: string;
+  teamName: string;
+  sector: string;
+  workType: WorkType;
+  notificationType: "START" | "COMPLETED";
+  startDate: string;
+  startTime: string;
+  endDate?: string;
+  endTime?: string;
+  quantityMeters?: number;
+  status: "IN_PROGRESS" | "COMPLETED";
+  latitude?: number;
+  longitude?: number;
+}
+
 export interface ServiceBox {
   id: string;
   connectionObject: string;
@@ -21,14 +48,35 @@ export interface ServiceBox {
   extraFields?: Record<string, string>;
 }
 
+export interface EneryaEmployee {
+  id: string;
+  name: string;
+}
+
+export interface ControlCompany {
+  id: string;
+  name: string;
+}
+
+export interface ControlEmployee {
+  id: string;
+  companyId: string;
+  name: string;
+}
+
 export interface FieldTeam {
   id: string;
   code: string;
-  name: string;
+  eneryaEmployee: EneryaEmployee;
+  controlCompany: ControlCompany;
+  controlEmployee: ControlEmployee;
+  district: string;
+  neighborhood: string;
+  workType: WorkType;
+  serviceBoxIds: string[];
   status: TeamStatus;
-  sectorRegionInfo: string;
-  todayProductionMeters: number;
-  lastReportTime?: string;
+  assignmentDate: string;
+  updatedAt: string;
   lat?: number;
   lng?: number;
 }
@@ -63,4 +111,27 @@ export interface DashboardKPIs {
   under30Days: number;
   activeTeams: number;
   todayProductionMeters: number;
+}
+
+export interface QRPackage {
+  id: string;
+  createdAt: string;
+  filters: {
+    lastStatus: "EMPTY" | "OTHER";
+    districts: string[];
+    sort: "ASC" | "DESC";
+  };
+  serviceBoxIds: string[];
+  assignedTeamId?: string;
+  status: "DRAFT" | "SENT" | "VIEWED";
+  sentAt?: string;
+  viewedAt?: string;
+}
+
+export interface FieldWorkStatus {
+  serviceBoxId: string;
+  qrPackageId: string;
+  completed: boolean;
+  completedAt?: string;
+  completedBy?: string;
 }

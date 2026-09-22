@@ -44,16 +44,6 @@ export default function ServiceBoxesPage() {
         if (cachedName) {
           setFileName(cachedName);
         }
-
-        const cached = localStorage.getItem('enerya_service_boxes');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setBoxes(parsed);
-            setLoading(false);
-            return;
-          }
-        }
       } catch (e) {
         console.error('Cache load error:', e);
       }
