@@ -135,15 +135,15 @@ export default function ServiceBoxesPage() {
       <div className="flex min-h-0">
 
         {/* ── Main Content ──────────────────────────────────── */}
-        <div className="flex-1 px-6 py-5 space-y-4 min-w-0">
+        <div className="flex-1 px-3 sm:px-6 py-3 sm:py-5 space-y-3.5 min-w-0">
 
           {/* ── Top Action Row ── */}
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
             <div className="flex items-center gap-2 flex-wrap">
               {fileName && (
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/70 border border-slate-700/50 rounded-lg text-[11px] font-semibold text-slate-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_2px_rgba(52,211,153,0.4)]" />
-                  {fileName}
+                  <span className="truncate max-w-[160px] sm:max-w-none">{fileName}</span>
                 </div>
               )}
               {listOpen && (
@@ -158,17 +158,50 @@ export default function ServiceBoxesPage() {
                 </div>
               )}
             </div>
-            <button
-              onClick={() => setImportOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 shadow-md shadow-emerald-600/20 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shrink-0"
-            >
-              <Upload className="h-3.5 w-3.5" />
-              Dosya Ekle
-            </button>
+
+            <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+              {/* Mobile Tab Switcher */}
+              {listOpen && (
+                <div className="flex sm:hidden items-center bg-slate-800/80 p-0.5 rounded-xl border border-slate-700/60">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('list')}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                      activeTab === 'list'
+                        ? 'bg-blue-500/25 border border-blue-500/40 text-blue-200'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Table2 className="h-3.5 w-3.5" />
+                    Liste
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('chart')}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                      activeTab === 'chart'
+                        ? 'bg-indigo-500/25 border border-indigo-500/40 text-indigo-200'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <BarChart2 className="h-3.5 w-3.5" />
+                    Grafik
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={() => setImportOpen(true)}
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 shadow-md shadow-emerald-600/20 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shrink-0"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                Dosya Ekle
+              </button>
+            </div>
           </div>
 
           {/* ── Filter Bar ── */}
-          <div className="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-3.5 backdrop-blur-sm">
+          <div className="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-3 sm:p-4 backdrop-blur-sm">
             <FilterBar
               filters={filters}
               onFiltersChange={handleFiltersChange}
@@ -237,8 +270,8 @@ export default function ServiceBoxesPage() {
           )}
         </div>
 
-        {/* ── Right-Rail: Vertical Tab Switcher ─────────────── */}
-        <div className="flex flex-col items-center gap-3 py-5 px-2.5 border-l border-slate-700/30">
+        {/* ── Right-Rail: Vertical Tab Switcher (Masaüstü) ─────────── */}
+        <div className="hidden sm:flex flex-col items-center gap-3 py-5 px-2.5 border-l border-slate-700/30">
           <button
             type="button"
             id="tab-list-view"
