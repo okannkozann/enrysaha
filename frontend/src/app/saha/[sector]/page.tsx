@@ -1,24 +1,24 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { serviceBoxService } from '@/lib/services/serviceBoxService';
 import { ServiceBox } from '@/types';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { MapPin, User, Calendar, Clock } from 'lucide-react';
+import {
+  MapPin, User, Calendar, Clock, ArrowLeft,
+  RefreshCw, Layers, ExternalLink
+} from 'lucide-react';
 import Link from 'next/link';
 
 export default function MobileFieldScreen() {
-  const params = useParams();
-  const [boxes, setBoxes] = useState<ServiceBox[]>([]);
+  const params  = useParams();
+  const router  = useRouter();
+  const [boxes, setBoxes]     = useState<ServiceBox[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       if (params.sector) {
         const data = await serviceBoxService.getServiceBoxesBySector(params.sector as string);
-        // Sort by waiting days descending (most critical first)
         data.sort((a, b) => b.waitingDays - a.waitingDays);
         setBoxes(data);
         setLoading(false);
@@ -28,91 +28,105 @@ export default function MobileFieldScreen() {
   }, [params.sector]);
 
   if (loading) {
-    return <div className="p-8 text-center text-slate-500">Kayıtlar yükleniyor...</div>;
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400 gap-3">
+        <RefreshCw className="h-7 w-7 animate-spin text-emerald-500" />
+        <span className="text-xs font-semibold">Sektör Kayıtları Yükleniyor...</span>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
-      <div className="bg-blue-900 text-white p-4 sticky top-0 z-10 shadow-md">
-        <h1 className="text-xl font-bold tracking-tight">ENERYA SAHA</h1>
-        <div className="text-blue-200 text-sm mt-1 flex justify-between items-center">
-          <span>Sektör {params.sector}</span>
-          <span className="bg-blue-800 px-2 py-0.5 rounded text-xs">{new Date().toLocaleDateString('tr-TR')}</span>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 pb-20 relative">
+
+      {/* Ambient glow */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-20 left-1/4 w-80 h-80 rounded-full bg-emerald-600/10 blur-[120px]" />
       </div>
 
-      <div className="p-4 space-y-4">
-        <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-          <div className="text-sm text-slate-600 font-medium">Toplam <span className="text-slate-900 font-bold">{boxes.length}</span> kayıt</div>
-          <select className="text-sm border-slate-200 rounded-md bg-slate-50 py-1 px-2 text-slate-700">
-            <option>Tüm Mahalleler</option>
-          </select>
-        </div>
-
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 snap-x">
-          <Button variant="secondary" size="sm" className="rounded-full shrink-0 bg-blue-100 text-blue-800 hover:bg-blue-200 snap-start">Tümü</Button>
-          <Button variant="outline" size="sm" className="rounded-full shrink-0 border-red-200 text-red-700 bg-red-50 snap-start">0-7 Gün</Button>
-          <Button variant="outline" size="sm" className="rounded-full shrink-0 border-orange-200 text-orange-700 bg-orange-50 snap-start">8-15 Gün</Button>
-          <Button variant="outline" size="sm" className="rounded-full shrink-0 snap-start">16-30 Gün</Button>
-        </div>
-
-        <div className="space-y-4">
-          {boxes.map((box) => (
-            <Card key={box.id} className="shadow-sm border-slate-200 overflow-hidden">
-              <div className={`h-1.5 w-full ${box.waitingDays <= 7 ? 'bg-red-500' : box.waitingDays <= 15 ? 'bg-orange-500' : 'bg-slate-300'}`} />
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-2">
-                    {box.waitingDays <= 7 && <span className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />}
-                    {box.waitingDays > 7 && box.waitingDays <= 15 && <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />}
-                    <span className="font-bold text-lg text-slate-900">{box.waitingDays} Gün Kaldı</span>
-                  </div>
-                  <Badge variant="secondary" className="bg-slate-100">{box.lastStatus}</Badge>
-                </div>
-                
-                <div className="space-y-3">
-                  <div>
-                    <span className="text-xs font-semibold text-slate-500 uppercase">Bağlantı Nesnesi</span>
-                    <p className="font-medium text-slate-900">{box.connectionObject}</p>
-                  </div>
-                  
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-slate-900 leading-snug">{box.address}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{box.neighborhood}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-slate-400 shrink-0" />
-                    <p className="text-sm text-slate-700">{box.name}</p>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-slate-400 shrink-0" />
-                    <p className="text-sm text-slate-700">Anlaşma: {box.agreementDate}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-slate-100">
-                  <Button variant="outline" className="w-full text-blue-700 border-blue-200 hover:bg-blue-50" asChild>
-                    <Link href={`/service-boxes/${box.id}`}>Detay</Link>
-                  </Button>
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700" asChild>
-                    <Link href="/map">Harita</Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          {boxes.length === 0 && (
-            <div className="text-center py-10 bg-white rounded-lg border border-slate-200">
-              <p className="text-slate-500 font-medium">Bu bölgede aktif iş bulunmuyor.</p>
+      {/* Sticky Header */}
+      <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-700/50 p-4 sticky top-0 z-30 shadow-lg">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => router.push('/saha')}
+              className="flex items-center justify-center w-8 h-8 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700/60 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <div>
+              <div className="font-bold text-white text-base">Sektör {params.sector}</div>
+              <div className="text-[11px] text-slate-400">Saha Servis Kutusu Listesi</div>
             </div>
-          )}
+          </div>
+
+          <div className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+            {boxes.length} Kutu
+          </div>
         </div>
+      </header>
+
+      {/* Content */}
+      <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-4 relative z-10">
+        {boxes.length === 0 ? (
+          <div className="p-10 text-center bg-slate-900/60 rounded-2xl border border-slate-800 text-slate-400 text-xs">
+            Bu sektörde kayıtlı servis kutusu bulunamadı.
+          </div>
+        ) : (
+          boxes.map((box) => (
+            <div
+              key={box.id}
+              className={`rounded-2xl border p-4 sm:p-5 backdrop-blur-xl transition-all space-y-3 ${
+                box.waitingDays >= 90
+                  ? 'border-red-500/40 bg-red-950/10 border-l-4 border-l-red-500'
+                  : box.waitingDays >= 60
+                  ? 'border-amber-500/40 bg-amber-950/10 border-l-4 border-l-amber-500'
+                  : 'border-slate-700/50 bg-slate-900/60 border-l-4 border-l-slate-700'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="text-sm font-black text-white">{box.connectionObject}</div>
+                  <div className="text-xs text-slate-400 mt-0.5">{box.district} / {box.neighborhood}</div>
+                </div>
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                    box.waitingDays >= 90
+                      ? 'bg-red-500/20 text-red-300 border-red-500/30'
+                      : 'bg-slate-700/60 text-slate-300 border-slate-600/30'
+                  }`}
+                >
+                  {box.waitingDays} Gün
+                </span>
+              </div>
+
+              <div className="text-xs text-slate-300 space-y-1">
+                <div className="flex items-start gap-1.5 text-slate-400 text-[11px]">
+                  <MapPin className="h-3.5 w-3.5 text-red-400 shrink-0 mt-0.5" />
+                  <span>{box.address}</span>
+                </div>
+                {box.name && (
+                  <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+                    <User className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                    <span>{box.name}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                <span className="text-[11px] text-slate-500">
+                  Anlaşma: <strong className="text-slate-300 font-semibold">{box.agreementDate || '—'}</strong>
+                </span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/15 text-blue-300 border border-blue-500/25">
+                  {box.lastStatus || 'Durum Boş'}
+                </span>
+              </div>
+            </div>
+          ))
+        )}
       </div>
+
     </div>
   );
 }

@@ -1,41 +1,38 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { workSessionService } from '@/lib/services/workSessionService';
 import { authService } from '@/lib/services/authService';
 import { useToast } from '@/components/ui/use-toast';
 import { WorkType, WorkSession, User } from '@/types';
-import { LogOut, ClipboardList, PackageSearch } from 'lucide-react';
+import {
+  LogOut, ClipboardList, PackageSearch, Play, CheckCircle2,
+  Clock, MapPin, HardHat, Activity, Sparkles, Layers,
+  ChevronRight, Calendar, ArrowRight, ShieldCheck, Flame, Loader2
+} from 'lucide-react';
 import Link from 'next/link';
 
 export default function MobileFieldReportPage() {
   const { toast } = useToast();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [reportType, setReportType] = useState<'START' | 'COMPLETED'>('START');
-  const [loading, setLoading] = useState(false);
-  const [activeSessions, setActiveSessions] = useState<WorkSession[]>([]);
+  const [currentUser, setCurrentUser]             = useState<User | null>(null);
+  const [reportType, setReportType]               = useState<'START' | 'COMPLETED'>('START');
+  const [loading, setLoading]                     = useState(false);
+  const [activeSessions, setActiveSessions]       = useState<WorkSession[]>([]);
   const [completedSessions, setCompletedSessions] = useState<WorkSession[]>([]);
 
   // Form State - İşe Başlama
-  const [sector, setSector] = useState('');
+  const [sector, setSector]     = useState('');
   const [workType, setWorkType] = useState<WorkType | ''>('');
 
   // Form State - İşi Tamamlama
   const [selectedSessionId, setSelectedSessionId] = useState('');
-  const [meters, setMeters] = useState('');
+  const [meters, setMeters]                       = useState('');
 
   // Otomatik Bilgiler (Zaman)
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
-    // Demo user'ı getir
-    authService.getCurrentFieldUser().then(user => setCurrentUser(user));
-
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    authService.getCurrentFieldUser().then((user) => setCurrentUser(user));
+    const timer = setInterval(() => setCurrentTime(new Date()), 30000);
     return () => clearInterval(timer);
   }, []);
 
@@ -49,10 +46,9 @@ export default function MobileFieldReportPage() {
     if (!currentUser?.teamId) return;
     const active = await workSessionService.getActiveWorkSessions(currentUser.teamId);
     setActiveSessions(active);
-    
-    // Sadece bugünkü tamamlanmış işleri mock data'dan çekmek için tümünü alıp filtreleyebiliriz:
+
     const all = await workSessionService.getWorkSessions();
-    const completed = all.filter(ws => ws.teamId === currentUser.teamId && ws.status === "COMPLETED");
+    const completed = all.filter((ws) => ws.teamId === currentUser.teamId && ws.status === "COMPLETED");
     setCompletedSessions(completed);
 
     if (active.length > 0 && !selectedSessionId) {
@@ -63,7 +59,7 @@ export default function MobileFieldReportPage() {
   const handleStartWork = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sector || !workType) {
-      toast({ title: 'Hata', description: 'Lütfen sektör ve imalat türünü seçin.', variant: 'destructive' });
+      toast({ title: 'Eksik Bilgi', description: 'Lütfen sektör ve imalat türünü seçin.', variant: 'destructive' });
       return;
     }
 
@@ -79,12 +75,12 @@ export default function MobileFieldReportPage() {
         startTime: `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
       });
 
-      toast({ title: 'Başarılı', description: 'İşe başlama bildirimi kaydedildi.' });
+      toast({ title: 'İş Başlatıldı', description: `${sector} sektöründe imalat başlatıldı.` });
       setSector('');
       setWorkType('');
       loadSessions();
     } catch (error) {
-      toast({ title: 'Hata', description: 'Bir sorun oluştu.', variant: 'destructive' });
+      toast({ title: 'Hata', description: 'İşlem sırasında bir hata oluştu.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -94,7 +90,7 @@ export default function MobileFieldReportPage() {
     e.preventDefault();
     const meterVal = Number(meters);
     if (!selectedSessionId || !meterVal || meterVal <= 0) {
-      toast({ title: 'Hata', description: 'Lütfen aktif bir iş seçin ve geçerli metraj girin.', variant: 'destructive' });
+      toast({ title: 'Eksik Bilgi', description: 'Lütfen aktif bir iş seçin ve geçerli metraj girin.', variant: 'destructive' });
       return;
     }
 
@@ -108,12 +104,12 @@ export default function MobileFieldReportPage() {
         `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
       );
 
-      toast({ title: 'Başarılı', description: 'İmalat başarıyla tamamlandı.' });
+      toast({ title: 'İmalat Tamamlandı', description: `${meterVal} metre imalat başarıyla kaydedildi.` });
       setMeters('');
       setSelectedSessionId('');
       loadSessions();
     } catch (error) {
-      toast({ title: 'Hata', description: 'Bir sorun oluştu.', variant: 'destructive' });
+      toast({ title: 'Hata', description: 'İşlem sırasında bir sorun oluştu.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -126,262 +122,450 @@ export default function MobileFieldReportPage() {
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   };
 
-  const selectedActiveSession = activeSessions.find(s => s.id === selectedSessionId);
+  const selectedActiveSession = activeSessions.find((s) => s.id === selectedSessionId);
+
+  // Toplam bugün yapılan metraj
+  const todayTotalMeters = completedSessions.reduce((s, ws) => s + (ws.quantityMeters || 0), 0);
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
-      <div className="bg-slate-900 text-white p-5 sticky top-0 z-10 flex justify-between items-start">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Saha Bildirimi</h1>
-          <div className="text-slate-400 text-sm mt-1">Günlük saha bildirimi</div>
-        </div>
-        <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white hover:bg-slate-800" asChild>
-          <Link href="/">
-            <LogOut className="h-5 w-5" />
-          </Link>
-        </Button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 pb-20 relative selection:bg-emerald-500/30 selection:text-white">
+
+      {/* Ambient background glows */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-24 left-1/4 w-96 h-96 rounded-full bg-emerald-600/10 blur-[120px]" />
+        <div className="absolute top-1/2 right-10 w-80 h-80 rounded-full bg-blue-600/10 blur-[120px]" />
       </div>
 
-      <div className="p-4 max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
-        
-        {/* Sol Menü (Side Navigation) */}
-        <div className="lg:w-72 shrink-0 flex flex-col gap-6 h-fit sticky top-24">
-          
-          {/* Ana Modüller */}
-          <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-2">
-            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-3 pt-2">Saha Menüsü</div>
-            <Link href="/saha" className="flex items-center gap-3 px-4 py-3 text-sm font-bold rounded-xl transition-all bg-slate-900 text-white shadow-md">
-              <ClipboardList className="h-5 w-5" /> 
-              Bildirim İşlemleri
-            </Link>
-            <Link href="/saha/qr-listesi" className="flex items-center gap-3 px-4 py-3 text-sm font-bold rounded-xl transition-all text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-              <PackageSearch className="h-5 w-5" /> 
-              Servis Kutuları
+      {/* ── Top Bar: Sticky Header ── */}
+      <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-700/50 p-4 sm:p-5 sticky top-0 z-30 shadow-lg">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <HardHat className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-black text-white text-base tracking-tight">ENERYA SAHA</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 border border-emerald-500/25 text-emerald-300">
+                  {currentUser?.teamName || 'Ekip 01'}
+                </span>
+              </div>
+              <div className="text-xs text-slate-400 mt-0.5">Saha Operasyon & İmalat Bildirimi</div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-800/80 border border-slate-700/60 text-xs font-semibold text-slate-300">
+              <Clock className="h-3.5 w-3.5 text-emerald-400" />
+              <span>{formatTime(currentTime)}</span>
+            </div>
+
+            <Link
+              href="/"
+              title="Çıkış Yap"
+              className="flex items-center justify-center w-8 h-8 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-slate-700/60 transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
             </Link>
           </div>
         </div>
+      </header>
 
-        {/* Form Content */}
-        <div className="flex-1 space-y-6">
+      {/* ── Main Container ── */}
+      <div className="p-4 sm:p-6 max-w-6xl mx-auto flex flex-col lg:flex-row gap-6 sm:gap-8 mt-2 relative z-10">
+
+        {/* ── Sol Menü (Side Navigation) ── */}
+        <aside className="lg:w-64 shrink-0 flex flex-col gap-4">
+
+          {/* Menü Kartı */}
+          <div className="rounded-2xl border border-slate-700/50 bg-slate-900/60 backdrop-blur-xl p-3 shadow-xl space-y-1.5">
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 pt-2 pb-1">
+              Saha Menüsü
+            </div>
+
+            <Link
+              href="/saha"
+              className="flex items-center justify-between px-3.5 py-3 text-xs font-bold rounded-xl transition-all bg-emerald-500/20 border border-emerald-500/35 text-white shadow-md shadow-emerald-500/10"
+            >
+              <div className="flex items-center gap-2.5">
+                <ClipboardList className="h-4 w-4 text-emerald-400" />
+                <span>Bildirim İşlemleri</span>
+              </div>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+            </Link>
+
+            <Link
+              href="/saha/qr-listesi"
+              className="flex items-center justify-between px-3.5 py-3 text-xs font-semibold rounded-xl transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white"
+            >
+              <div className="flex items-center gap-2.5">
+                <PackageSearch className="h-4 w-4 text-slate-400" />
+                <span>Servis Kutuları</span>
+              </div>
+              <ChevronRight className="h-3.5 w-3.5 text-slate-600" />
+            </Link>
+          </div>
+
+          {/* Günlük Özet Mini Kartı */}
+          <div className="rounded-2xl border border-slate-700/40 bg-slate-900/40 p-4 space-y-3 hidden sm:block">
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              Bugünkü Performans
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-slate-400">Tamamlanan Metraj:</span>
+              <span className="text-sm font-black text-emerald-400">{todayTotalMeters} m</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-slate-400">Aktif Vardiya:</span>
+              <span className="text-sm font-black text-amber-400">{activeSessions.length} İş</span>
+            </div>
+          </div>
+        </aside>
+
+        {/* ── Form & Akış İçeriği ── */}
+        <main className="flex-1 space-y-6 min-w-0">
 
           {/* Toggle / Segmented Control */}
-          <div className="flex bg-slate-200 p-1 rounded-xl">
+          <div className="flex bg-slate-900/80 p-1 rounded-2xl border border-slate-700/60 shadow-lg">
             <button
               type="button"
-              className={`flex-1 py-3 text-sm font-semibold rounded-lg transition-colors ${reportType === 'START' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`flex-1 py-3 px-4 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
+                reportType === 'START'
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
               onClick={() => setReportType('START')}
             >
-              İşe Başlama
+              <Play className="h-4 w-4" />
+              <span>İşe Başlama Bildirimi</span>
             </button>
+
             <button
               type="button"
-              className={`flex-1 py-3 text-sm font-semibold rounded-lg transition-colors ${reportType === 'COMPLETED' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`flex-1 py-3 px-4 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
+                reportType === 'COMPLETED'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
               onClick={() => setReportType('COMPLETED')}
             >
-              Tamamlandı
+              <CheckCircle2 className="h-4 w-4" />
+              <span>İmalat Tamamlama</span>
+              {activeSessions.length > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-white/20 text-white">
+                  {activeSessions.length}
+                </span>
+              )}
             </button>
           </div>
 
-        {reportType === 'START' ? (
-          <form onSubmit={handleStartWork} className="space-y-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-slate-600 font-semibold">Sektör</Label>
-                <Select value={sector} onValueChange={setSector}>
-                  <SelectTrigger className="h-14 bg-white border-slate-200 text-base shadow-sm">
-                    <SelectValue placeholder="Sektör Seçin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="072200003SK16">072200003SK16</SelectItem>
-                    <SelectItem value="072200011SK13">072200011SK13</SelectItem>
-                    <SelectItem value="072200018SK10">072200018SK10</SelectItem>
-                  </SelectContent>
-                </Select>
+          {/* ── İŞE BAŞLAMA FORMU ── */}
+          {reportType === 'START' ? (
+            <div className="rounded-2xl border border-slate-700/50 bg-slate-900/60 backdrop-blur-xl p-5 sm:p-7 shadow-2xl space-y-6">
+              <div className="flex items-center gap-2 pb-3 border-b border-slate-800">
+                <Play className="h-4 w-4 text-emerald-400" />
+                <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                  Yeni Saha İmalatına Başla
+                </h2>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-slate-600 font-semibold">İmalat Türü</Label>
-                <Select value={workType} onValueChange={(v) => setWorkType(v as WorkType)}>
-                  <SelectTrigger className="h-14 bg-white border-slate-200 text-base shadow-sm">
-                    <SelectValue placeholder="İmalat Türü Seçin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PE Ana Hat">PE Ana Hat</SelectItem>
-                    <SelectItem value="ST Çelik Hat">ST Çelik Hat</SelectItem>
-                    <SelectItem value="Servis Hattı">Servis Hattı</SelectItem>
-                    <SelectItem value="Servis Kutusu">Servis Kutusu</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+              <form onSubmit={handleStartWork} className="space-y-5">
+                <div className="space-y-4">
+                  {/* Sektör Seçimi */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5 text-emerald-400" />
+                      Sektör / Bölge
+                    </label>
+                    <select
+                      value={sector}
+                      onChange={(e) => setSector(e.target.value)}
+                      className="w-full h-13 px-4 rounded-xl bg-slate-800/80 border border-slate-700 text-sm font-semibold text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all cursor-pointer"
+                    >
+                      <option value="" disabled className="bg-slate-900 text-slate-500">Sektör Seçin...</option>
+                      <option value="072200003SK16" className="bg-slate-900 text-white">072200003SK16 — Kepez Bölgesi</option>
+                      <option value="072200011SK13" className="bg-slate-900 text-white">072200011SK13 — Muratpaşa Bölgesi</option>
+                      <option value="072200018SK10" className="bg-slate-900 text-white">072200018SK10 — Konyaaltı Bölgesi</option>
+                    </select>
+                  </div>
 
-            <div className="bg-slate-100 p-4 rounded-xl space-y-2 border border-slate-200">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Tarih:</span>
-                <span className="font-semibold text-slate-800">{formatDate(currentTime)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Saat:</span>
-                <span className="font-semibold text-slate-800">{formatTime(currentTime)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Ekip:</span>
-                <span className="font-semibold text-slate-800">{currentUser?.teamName || '-'}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Durum:</span>
-                <span className="font-semibold text-blue-600">Devam Ediyor</span>
-              </div>
-              <p className="text-xs text-slate-400 mt-2 text-center border-t border-slate-200 pt-2">Bu bilgiler sistem tarafından otomatik atanır.</p>
-            </div>
-
-            <Button type="submit" disabled={loading} className="w-full h-14 text-base font-bold bg-slate-900 hover:bg-slate-800">
-              {loading ? 'İşleniyor...' : 'İŞE BAŞLA'}
-            </Button>
-          </form>
-        ) : (
-          <form onSubmit={handleCompleteWork} className="space-y-6">
-            {activeSessions.length === 0 ? (
-              <div className="p-6 text-center text-slate-500 bg-white rounded-xl border border-slate-200">
-                Aktif işiniz bulunmuyor.
-              </div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <Label className="text-slate-600 font-semibold">Aktif İş Seçimi</Label>
-                  <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
-                    <SelectTrigger className="h-auto py-3 bg-white border-slate-200 shadow-sm">
-                      <SelectValue placeholder="İş Seçin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {activeSessions.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          <div className="flex flex-col text-left py-1 gap-1">
-                            <span className="font-semibold text-slate-900">{s.sector}</span>
-                            <span className="text-xs text-slate-500">{s.workType} (Başlangıç: {s.startTime})</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {/* İmalat Türü Seçimi */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                      <Layers className="h-3.5 w-3.5 text-blue-400" />
+                      İmalat Türü
+                    </label>
+                    <select
+                      value={workType}
+                      onChange={(e) => setWorkType(e.target.value as WorkType)}
+                      className="w-full h-13 px-4 rounded-xl bg-slate-800/80 border border-slate-700 text-sm font-semibold text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer"
+                    >
+                      <option value="" disabled className="bg-slate-900 text-slate-500">İmalat Türü Seçin...</option>
+                      <option value="PE Ana Hat" className="bg-slate-900 text-white">PE Ana Hat İmalatı</option>
+                      <option value="ST Çelik Hat" className="bg-slate-900 text-white">ST Çelik Hat İmalatı</option>
+                      <option value="Servis Hattı" className="bg-slate-900 text-white">Servis Hattı Çekimi</option>
+                      <option value="Servis Kutusu" className="bg-slate-900 text-white">Servis Kutusu Montajı</option>
+                    </select>
+                  </div>
                 </div>
 
-                {selectedActiveSession && (
-                  <div className="bg-slate-100 p-4 rounded-xl space-y-2 border border-slate-200">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Sektör:</span>
-                      <span className="font-semibold text-slate-800">{selectedActiveSession.sector}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">İmalat Türü:</span>
-                      <span className="font-semibold text-slate-800">{selectedActiveSession.workType}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Başlangıç:</span>
-                      <span className="font-semibold text-slate-800">{selectedActiveSession.startTime}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Bitiş Saati (Otomatik):</span>
-                      <span className="font-semibold text-slate-800">{formatTime(currentTime)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Durum:</span>
-                      <span className="font-semibold text-emerald-600">Tamamlandı</span>
-                    </div>
+                {/* Otomatik Bilgi Kartı */}
+                <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 p-4 space-y-2.5 text-xs">
+                  <div className="flex justify-between items-center text-slate-400">
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 text-slate-500" />
+                      İş Başlangıç Tarihi:
+                    </span>
+                    <span className="font-bold text-white">{formatDate(currentTime)}</span>
                   </div>
+
+                  <div className="flex justify-between items-center text-slate-400">
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5 text-slate-500" />
+                      Başlangıç Saati:
+                    </span>
+                    <span className="font-bold text-white">{formatTime(currentTime)}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-slate-400">
+                    <span className="flex items-center gap-1.5">
+                      <HardHat className="h-3.5 w-3.5 text-slate-500" />
+                      Sorumlu Ekip:
+                    </span>
+                    <span className="font-bold text-slate-200">{currentUser?.teamName || 'Ekip 01'}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-slate-400 pt-2 border-t border-slate-700/50">
+                    <span>Saha Durumu:</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                      Devam Ediyor
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-14 text-sm font-black uppercase tracking-wider rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 active:scale-98 transition-all disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>Kaydediliyor...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-5 w-5" />
+                      <span>İŞE BAŞLA</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          ) : (
+            /* ── İMALAT TAMAMLAMA FORMU ── */
+            <div className="rounded-2xl border border-slate-700/50 bg-slate-900/60 backdrop-blur-xl p-5 sm:p-7 shadow-2xl space-y-6">
+              <div className="flex items-center gap-2 pb-3 border-b border-slate-800">
+                <CheckCircle2 className="h-4 w-4 text-blue-400" />
+                <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                  Aktif İşi Sonlandır & Metraj Bildir
+                </h2>
+              </div>
+
+              <form onSubmit={handleCompleteWork} className="space-y-5">
+                {activeSessions.length === 0 ? (
+                  <div className="p-8 text-center text-slate-400 bg-slate-800/40 rounded-xl border border-slate-700/50 space-y-2">
+                    <Clock className="h-8 w-8 text-slate-600 mx-auto mb-1" />
+                    <div className="font-semibold text-sm text-slate-300">Şu anda devam eden aktif bir işiniz bulunmuyor.</div>
+                    <div className="text-xs text-slate-500">"İşe Başlama" sekmesinden yeni bir çalışma başlatabilirsiniz.</div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Aktif İş Seçimi */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-300">Aktif Görev Seçimi</label>
+                      <select
+                        value={selectedSessionId}
+                        onChange={(e) => setSelectedSessionId(e.target.value)}
+                        className="w-full h-13 px-4 rounded-xl bg-slate-800/80 border border-slate-700 text-sm font-semibold text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer"
+                      >
+                        {activeSessions.map((s) => (
+                          <option key={s.id} value={s.id} className="bg-slate-900 text-white">
+                            {s.sector} — {s.workType} (Başlama: {s.startTime})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Seçili İş Özeti */}
+                    {selectedActiveSession && (
+                      <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 p-4 space-y-2 text-xs">
+                        <div className="flex justify-between items-center text-slate-400">
+                          <span>Sektör:</span>
+                          <span className="font-bold text-white">{selectedActiveSession.sector}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-slate-400">
+                          <span>İmalat Türü:</span>
+                          <span className="font-bold text-white">{selectedActiveSession.workType}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-slate-400">
+                          <span>Başlangıç Saati:</span>
+                          <span className="font-bold text-white">{selectedActiveSession.startTime}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-slate-400">
+                          <span>Bitiş Saati (Otomatik):</span>
+                          <span className="font-bold text-emerald-400">{formatTime(currentTime)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-slate-400 pt-2 border-t border-slate-700/50">
+                          <span>Yeni Durum:</span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+                            Tamamlandı
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Metraj Girişi */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                        <span>Gerçekleşen İmalat Metrajı</span>
+                        <span className="text-[10px] text-slate-500 font-normal">Tam sayı olarak giriniz</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          placeholder="Örn: 140"
+                          value={meters}
+                          onChange={(e) => setMeters(e.target.value)}
+                          min="1"
+                          className="w-full h-14 pl-4 pr-16 rounded-xl bg-slate-800/80 border border-slate-700 text-lg font-black text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-600"
+                        />
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-xs font-bold text-slate-400 uppercase">
+                          metre
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full h-14 text-sm font-black uppercase tracking-wider rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 active:scale-98 transition-all disabled:opacity-50"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          <span>Kaydediliyor...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-5 w-5" />
+                          <span>İMALATI TAMAMLA</span>
+                        </>
+                      )}
+                    </button>
+                  </>
                 )}
-
-                <div className="space-y-2">
-                  <Label className="text-slate-600 font-semibold">İmalat Metrajı</Label>
-                  <div className="relative">
-                    <Input 
-                      type="number" 
-                      placeholder="Örn: 125" 
-                      value={meters}
-                      onChange={(e) => setMeters(e.target.value)}
-                      className="h-16 text-lg font-semibold pl-4 pr-16 bg-white border-slate-200 shadow-sm"
-                      min="1"
-                    />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-6 text-slate-500 font-medium border-l border-slate-200 ml-2">
-                      metre
-                    </div>
-                  </div>
-                </div>
-
-                <Button type="submit" disabled={loading} className="w-full h-14 text-base font-bold bg-slate-900 hover:bg-slate-800">
-                  {loading ? 'İşleniyor...' : 'İMALATI TAMAMLA'}
-                </Button>
-              </>
-            )}
-          </form>
-        )}
-
-        {/* Bugünkü Çalışmalarım */}
-        <div className="mt-10 space-y-4">
-          <h2 className="text-lg font-bold text-slate-900 border-b border-slate-200 pb-2">Bugünkü Çalışma</h2>
-          
-          {activeSessions.length === 0 && completedSessions.length === 0 && (
-             <div className="text-sm text-slate-500 italic">Kayıt bulunamadı.</div>
+              </form>
+            </div>
           )}
 
-          {activeSessions.map(session => (
-            <Card key={session.id} className="border-l-4 border-l-amber-500 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
+          {/* ── BUGÜNKÜ ÇALIŞMALARIM LİSTESİ ── */}
+          <div className="space-y-4 pt-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <Activity className="h-4 w-4 text-emerald-400" />
+                Bugünkü Saha Çalışmaları
+              </h2>
+              <span className="text-xs text-slate-400 font-medium">
+                {activeSessions.length} Aktif / {completedSessions.length} Biten
+              </span>
+            </div>
+
+            {activeSessions.length === 0 && completedSessions.length === 0 && (
+              <div className="p-8 text-center text-slate-500 text-xs italic bg-slate-900/40 rounded-xl border border-slate-800">
+                Bugüne ait kayıtlı saha çalışması bulunamadı.
+              </div>
+            )}
+
+            {/* Aktif Seanslar */}
+            {activeSessions.map((session) => (
+              <div
+                key={session.id}
+                className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 sm:p-5 backdrop-blur-sm border-l-4 border-l-amber-500 transition-all hover:bg-amber-500/10 space-y-3"
+              >
+                <div className="flex items-start justify-between gap-2">
                   <div>
-                    <div className="text-xs font-semibold text-slate-500">{session.teamName}</div>
-                    <div className="font-bold text-slate-900">{session.sector}</div>
+                    <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">
+                      {session.teamName}
+                    </span>
+                    <div className="text-base font-black text-white mt-0.5">
+                      {session.sector}
+                    </div>
                   </div>
-                  <div className="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></div>
+                  <div className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                     Devam Ediyor
                   </div>
                 </div>
-                <div className="text-sm text-slate-700 font-medium mb-3">{session.workType}</div>
-                <div className="flex text-xs text-slate-500 gap-4">
-                  <div>Başlangıç: <span className="font-medium text-slate-700">{session.startTime}</span></div>
+
+                <div className="flex flex-wrap items-center justify-between text-xs text-slate-300 gap-2 pt-1 border-t border-amber-500/20">
+                  <span className="font-semibold text-slate-200">{session.workType}</span>
+                  <span className="text-slate-400">Başlangıç: <strong className="text-white">{session.startTime}</strong></span>
                 </div>
-                
+
                 {reportType !== 'COMPLETED' && (
-                  <Button 
-                    variant="outline" 
-                    className="w-full mt-4 text-xs font-semibold border-slate-200 hover:bg-slate-50"
+                  <button
+                    type="button"
                     onClick={() => {
                       setReportType('COMPLETED');
                       setSelectedSessionId(session.id);
                     }}
+                    className="w-full mt-2 py-2.5 px-4 rounded-xl text-xs font-bold text-amber-200 bg-amber-500/20 border border-amber-500/30 hover:bg-amber-500/30 transition-all flex items-center justify-center gap-1.5"
                   >
-                    İMALATI TAMAMLA
-                  </Button>
+                    <span>İmalatı Tamamla</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
                 )}
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            ))}
 
-          {completedSessions.map(session => (
-            <Card key={session.id} className="border-l-4 border-l-emerald-500 shadow-sm opacity-80">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
+            {/* Tamamlanan Seanslar */}
+            {completedSessions.map((session) => (
+              <div
+                key={session.id}
+                className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 sm:p-5 backdrop-blur-sm border-l-4 border-l-emerald-500 transition-all hover:bg-emerald-500/10 space-y-2.5"
+              >
+                <div className="flex items-start justify-between gap-2">
                   <div>
-                    <div className="text-xs font-semibold text-slate-500">{session.teamName}</div>
-                    <div className="font-bold text-slate-900">{session.sector}</div>
+                    <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+                      {session.teamName}
+                    </span>
+                    <div className="text-base font-black text-white mt-0.5">
+                      {session.sector}
+                    </div>
                   </div>
-                  <div className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                  <div className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     Tamamlandı
                   </div>
                 </div>
-                <div className="text-sm text-slate-700 font-medium mb-3">{session.workType}</div>
-                <div className="flex flex-wrap text-xs text-slate-500 gap-x-4 gap-y-2">
-                  <div>Süre: <span className="font-medium text-slate-700">{session.startTime} – {session.endTime}</span></div>
-                  <div>Metraj: <span className="font-bold text-slate-900">{session.quantityMeters} m</span></div>
+
+                <div className="text-xs font-semibold text-slate-200">
+                  {session.workType}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        </div>
+
+                <div className="flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2 pt-2 border-t border-emerald-500/20">
+                  <span>Saat: <strong className="text-white">{session.startTime} – {session.endTime}</strong></span>
+                  <span className="text-emerald-300 font-black text-sm">{session.quantityMeters} m</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+        </main>
       </div>
+
     </div>
   );
 }

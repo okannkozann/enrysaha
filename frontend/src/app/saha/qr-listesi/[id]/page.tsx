@@ -1,15 +1,17 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { qrService } from '@/lib/services/qrService';
 import { serviceBoxService } from '@/lib/services/serviceBoxService';
 import { authService } from '@/lib/services/authService';
 import { QRPackage, ServiceBox, FieldWorkStatus, User } from '@/types';
-import { ArrowLeft, Search, Download, Check, CheckCircle2, ClipboardList, PackageSearch } from 'lucide-react';
+import {
+  ArrowLeft, Search, Download, Check, CheckCircle2,
+  ClipboardList, PackageSearch, MapPin, Layers,
+  Phone, User as UserIcon, Clock, AlertTriangle,
+  QrCode, RefreshCw
+} from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -17,19 +19,19 @@ import autoTable from 'jspdf-autotable';
 type FilterTab = 'all' | 'pending' | 'completed';
 
 export default function MobileQRDetailPage() {
-  const params = useParams();
-  const router = useRouter();
+  const params  = useParams();
+  const router  = useRouter();
   const { toast } = useToast();
-  const qrId = params.id as string;
+  const qrId    = params.id as string;
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [qr, setQr] = useState<QRPackage | null>(null);
-  const [boxes, setBoxes] = useState<ServiceBox[]>([]);
+  const [qr, setQr]                   = useState<QRPackage | null>(null);
+  const [boxes, setBoxes]             = useState<ServiceBox[]>([]);
   const [completions, setCompletions] = useState<FieldWorkStatus[]>([]);
 
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<FilterTab>('all');
+  const [loading, setLoading]         = useState(true);
+  const [search, setSearch]           = useState('');
+  const [activeTab, setActiveTab]     = useState<FilterTab>('all');
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
@@ -41,12 +43,12 @@ export default function MobileQRDetailPage() {
       setQr(pkg);
 
       const allBoxes = await serviceBoxService.getServiceBoxes();
-      const assigned = allBoxes.filter(b => pkg.serviceBoxIds.includes(b.id));
+      const assigned = allBoxes.filter((b) => pkg.serviceBoxIds.includes(b.id));
 
       assigned.sort((a, b) => {
         if (pkg.filters.sort === "DESC") return (b.waitingDays || 0) - (a.waitingDays || 0);
         if (pkg.filters.sort === "ASC") return (a.waitingDays || 0) - (b.waitingDays || 0);
-        return 0; // maintain default
+        return 0;
       });
 
       setBoxes(assigned);
@@ -67,11 +69,10 @@ export default function MobileQRDetailPage() {
     try {
       const updated = await qrService.markServiceBoxCompleted(qrId, boxId, currentUser.teamId, !isAlreadyCompleted);
 
-      setCompletions(prev => {
-        const idx = prev.findIndex(c => c.serviceBoxId === boxId);
+      setCompletions((prev) => {
+        const idx = prev.findIndex((c) => c.serviceBoxId === boxId);
 
         if (!isAlreadyCompleted) {
-          // adding
           if (updated) {
             if (idx >= 0) {
               const arr = [...prev];
@@ -81,7 +82,6 @@ export default function MobileQRDetailPage() {
             return [...prev, updated];
           }
         } else {
-          // removing
           if (idx >= 0) {
             const arr = [...prev];
             arr.splice(idx, 1);
@@ -90,30 +90,24 @@ export default function MobileQRDetailPage() {
         }
         return prev;
       });
-
-      if (!isAlreadyCompleted) {
-        // No toast
-      } else {
-        // No toast
-      }
     } catch (e) {
       toast({ title: 'Hata', description: 'İşlem sırasında hata oluştu.', variant: 'destructive' });
     }
   };
 
-  const isCompleted = (boxId: string) => completions.some(c => c.serviceBoxId === boxId && c.completed);
+  const isCompleted = (boxId: string) => completions.some((c) => c.serviceBoxId === boxId && c.completed);
 
   // Derived state
-  const completedCount = completions.filter(c => c.completed).length;
-  const totalCount = boxes.length;
+  const completedCount = completions.filter((c) => c.completed).length;
+  const totalCount     = boxes.length;
 
   const tabFilteredBoxes = useMemo(() => {
-    if (activeTab === 'completed') return boxes.filter(b => isCompleted(b.id));
-    if (activeTab === 'pending') return boxes.filter(b => !isCompleted(b.id));
+    if (activeTab === 'completed') return boxes.filter((b) => isCompleted(b.id));
+    if (activeTab === 'pending') return boxes.filter((b) => !isCompleted(b.id));
     return boxes;
   }, [boxes, activeTab, completions]);
 
-  const searchFilteredBoxes = tabFilteredBoxes.filter(b =>
+  const searchFilteredBoxes = tabFilteredBoxes.filter((b) =>
     b.address.toLowerCase().includes(search.toLowerCase()) ||
     b.connectionObject.toLowerCase().includes(search.toLowerCase()) ||
     b.district.toLowerCase().includes(search.toLowerCase()) ||
@@ -145,7 +139,7 @@ export default function MobileQRDetailPage() {
         box.address,
         box.district,
         `${box.waitingDays} Gun`,
-        isCompleted(box.id) ? 'Tamamlandi' : 'Bekliyor'
+        isCompleted(box.id) ? 'Tamamlandi' : 'Bekliyor',
       ]);
 
       autoTable(doc, {
@@ -154,15 +148,15 @@ export default function MobileQRDetailPage() {
         body: tableData,
         theme: 'grid',
         styles: { fontSize: 8 },
-        headStyles: { fillColor: [30, 41, 59] },
+        headStyles: { fillColor: [15, 23, 42] },
         didParseCell: function (data) {
           if (data.section === 'body' && data.column.index === 5) {
             if (data.cell.raw === 'Tamamlandi') {
-              data.cell.styles.textColor = [22, 163, 74];
+              data.cell.styles.textColor = [52, 211, 153];
               data.cell.styles.fontStyle = 'bold';
             }
           }
-        }
+        },
       });
 
       doc.save(`Saha_Liste_${qr?.id}.pdf`);
@@ -174,200 +168,367 @@ export default function MobileQRDetailPage() {
     }
   };
 
-  if (loading) return <div className="p-10 text-center text-slate-500">Yükleniyor...</div>;
-  if (!qr) return <div className="p-10 text-center text-red-500">QR bulunamadı.</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-3 text-slate-400">
+        <RefreshCw className="h-8 w-8 animate-spin text-blue-500" />
+        <span className="text-sm font-semibold">QR Listesi Yükleniyor...</span>
+      </div>
+    );
+  }
+
+  if (!qr) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center text-rose-400">
+        <p className="text-base font-bold">QR Paketi bulunamadı.</p>
+        <Link href="/saha" className="mt-4 text-xs font-semibold text-blue-400 underline">
+          Saha Ana Sayfasına Dön
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-10">
-      <div className="bg-slate-900 text-white p-4 sticky top-0 z-20 shadow-sm flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/saha')} className="text-white hover:bg-slate-800 rounded-full">
-            <ArrowLeft className="h-6 w-6" />
-          </Button>
-          <div>
-            <h1 className="text-lg font-bold tracking-tight">Servis Kutuları</h1>
-            <div className="text-slate-400 text-xs mt-0.5">Son gönderilen servis kutusu listesi</div>
-          </div>
-        </div>
-        <Button size="sm" variant="outline" className="bg-transparent border-slate-700 text-slate-200 hover:bg-slate-800" onClick={handleDownloadPDF} disabled={downloading}>
-          <Download className="h-4 w-4 mr-1" /> PDF İNDİR
-        </Button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 pb-20 relative selection:bg-emerald-500/30 selection:text-white">
+
+      {/* Ambient background glows */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-24 left-1/4 w-96 h-96 rounded-full bg-blue-600/10 blur-[120px]" />
+        <div className="absolute top-1/2 right-10 w-80 h-80 rounded-full bg-purple-600/10 blur-[120px]" />
       </div>
 
-      <div className="p-4 md:p-6 max-w-[1600px] mx-auto flex flex-col lg:flex-row gap-8">
-
-        {/* Sol Menü (Side Navigation) */}
-        <div className="lg:w-72 shrink-0 flex flex-col gap-6 h-fit sticky top-24">
-          <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-2">
-            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-3 pt-2">Saha Menüsü</div>
-            <Link href="/saha" className="flex items-center gap-3 px-4 py-3 text-sm font-bold rounded-xl transition-all text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-              <ClipboardList className="h-5 w-5" />
-              Bildirim İşlemleri
-            </Link>
-            <Link href="/saha/qr-listesi" className="flex items-center gap-3 px-4 py-3 text-sm font-bold rounded-xl transition-all bg-slate-900 text-white shadow-md">
-              <PackageSearch className="h-5 w-5" />
-              Servis Kutuları
-            </Link>
+      {/* ── Top Bar: Sticky Header ── */}
+      <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-700/50 p-4 sticky top-0 z-30 shadow-lg">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => router.push('/saha')}
+              className="flex items-center justify-center w-8 h-8 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700/60 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white text-sm sm:text-base">{qr.id}</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/15 border border-blue-500/25 text-blue-300">
+                  {completedCount} / {totalCount} Tamamlandı
+                </span>
+              </div>
+              <div className="text-[11px] text-slate-400">Atanan Saha Servis Kutusu Listesi</div>
+            </div>
           </div>
+
+          <button
+            type="button"
+            onClick={handleDownloadPDF}
+            disabled={downloading}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800/80 border border-slate-700 hover:bg-slate-700 hover:text-white transition-all disabled:opacity-50"
+          >
+            <Download className="h-3.5 w-3.5 text-blue-400" />
+            <span className="hidden sm:inline">PDF İndir</span>
+          </button>
         </div>
+      </header>
 
-        {/* Ana İçerik */}
-        <div className="flex-1 space-y-6">
+      {/* ── Main Container ── */}
+      <div className="p-4 sm:p-6 max-w-6xl mx-auto flex flex-col lg:flex-row gap-6 sm:gap-8 mt-2 relative z-10">
 
-          {/* QR & Filters Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* ── Sol Menü ── */}
+        <aside className="lg:w-64 shrink-0 flex flex-col gap-4">
+          <div className="rounded-2xl border border-slate-700/50 bg-slate-900/60 backdrop-blur-xl p-3 shadow-xl space-y-1.5">
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 pt-2 pb-1">
+              Saha Menüsü
+            </div>
 
-            {/* Paket Özeti */}
-            <Card className="border-slate-200 shadow-sm bg-white">
-              <CardContent className="p-6">
-                <div className="text-2xl font-black text-slate-900 mb-1">{qr.id}</div>
-                <div className="text-base font-bold text-blue-700 mb-3">{currentUser?.teamName || 'Saha Ekibi'}</div>
-                <div className="flex items-center gap-4 text-sm text-slate-600 font-medium border-t border-slate-100 pt-3">
-                  <div className="flex flex-col">
-                    <span className="text-xs text-slate-400">Toplam Kayıt</span>
-                    <span className="text-slate-900">{totalCount} Servis Kutusu</span>
-                  </div>
-                  <div className="w-px h-8 bg-slate-200"></div>
-                  <div className="flex flex-col">
-                    <span className="text-xs text-slate-400">Gönderilme Tarihi</span>
-                    <span className="text-slate-900">{qr.sentAt ? new Date(qr.sentAt).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <Link
+              href="/saha"
+              className="flex items-center justify-between px-3.5 py-3 text-xs font-semibold rounded-xl transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white"
+            >
+              <div className="flex items-center gap-2.5">
+                <ClipboardList className="h-4 w-4 text-slate-400" />
+                <span>Bildirim İşlemleri</span>
+              </div>
+              <ArrowLeft className="h-3.5 w-3.5 text-slate-600 rotate-180" />
+            </Link>
 
-            {/* Gönderilen Liste Kriterleri */}
-            <Card className="border-slate-200 shadow-sm bg-white">
-              <CardContent className="p-6">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Gönderilen Liste Kriterleri</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <div className="text-slate-500 mb-1">Son Durum</div>
-                    <div className="font-bold text-slate-900">{qr.filters.lastStatus === 'EMPTY' ? 'Boş' : qr.filters.lastStatus === 'OTHER' ? 'Diğer' : 'Tümü'}</div>
-                  </div>
-                  <div>
-                    <div className="text-slate-500 mb-1">İlçe</div>
-                    <div className="font-bold text-slate-900">{qr.filters.districts.length > 0 ? qr.filters.districts.join(' · ') : 'Tümü'}</div>
-                  </div>
-                  <div>
-                    <div className="text-slate-500 mb-1">Bekleme Süresi</div>
-                    <div className="font-bold text-slate-900">{(qr.filters as any).over90Days ? '> 90 Gün' : 'Tümü'}</div>
-                  </div>
-                  <div>
-                    <div className="text-slate-500 mb-1">Sıralama</div>
-                    <div className="font-bold text-slate-900">{qr.filters.sort === 'DESC' ? 'Büyükten Küçüğe' : qr.filters.sort === 'ASC' ? 'Küçükten Büyüğe' : 'Varsayılan'}</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
+            <Link
+              href="/saha/qr-listesi"
+              className="flex items-center justify-between px-3.5 py-3 text-xs font-bold rounded-xl transition-all bg-blue-500/20 border border-blue-500/35 text-white shadow-md shadow-blue-500/10"
+            >
+              <div className="flex items-center gap-2.5">
+                <PackageSearch className="h-4 w-4 text-blue-400" />
+                <span>Servis Kutuları</span>
+              </div>
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_6px_rgba(96,165,250,0.8)]" />
+            </Link>
           </div>
 
-          {/* View Tabs & Search */}
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex bg-slate-100 p-1 rounded-lg w-full sm:w-auto">
+          {/* İlerleme Çubuğu Kartı */}
+          <div className="rounded-2xl border border-slate-700/50 bg-slate-900/60 p-4 space-y-2.5">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-400 font-medium">Tamamlanma:</span>
+              <span className="font-black text-emerald-400">
+                %{totalCount ? Math.round((completedCount / totalCount) * 100) : 0}
+              </span>
+            </div>
+            <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full transition-all duration-500"
+                style={{ width: `${totalCount ? (completedCount / totalCount) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
+        </aside>
+
+        {/* ── Ana İçerik ── */}
+        <main className="flex-1 space-y-6 min-w-0">
+
+          {/* QR Paket & Kriter Kartları */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Paket Özeti */}
+            <div className="rounded-2xl border border-slate-700/50 bg-slate-900/60 backdrop-blur-xl p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <QrCode className="h-4 w-4 text-blue-400" />
+                <span className="text-xs font-bold uppercase text-slate-400 tracking-wider">İş Paketi</span>
+              </div>
+              <div className="text-lg font-black text-white">{qr.id}</div>
+              <div className="text-xs font-semibold text-emerald-400">
+                {currentUser?.teamName || 'Saha Ekibi'}
+              </div>
+
+              <div className="flex items-center gap-4 text-xs text-slate-400 pt-3 border-t border-slate-800">
+                <div>
+                  <span className="block text-[10px] text-slate-500">Toplam</span>
+                  <span className="font-bold text-white">{totalCount} Kutu</span>
+                </div>
+                <div className="w-px h-6 bg-slate-800" />
+                <div>
+                  <span className="block text-[10px] text-slate-500">Tarih</span>
+                  <span className="font-medium text-slate-200">
+                    {qr.sentAt ? new Date(qr.sentAt).toLocaleDateString('tr-TR') : '—'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Kriterler */}
+            <div className="rounded-2xl border border-slate-700/50 bg-slate-900/60 backdrop-blur-xl p-5 space-y-3">
+              <div className="text-xs font-bold uppercase text-slate-400 tracking-wider">Paket Kriterleri</div>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <span className="text-[10px] text-slate-500 block">Son Durum</span>
+                  <span className="font-semibold text-slate-200">
+                    {qr.filters.lastStatus === 'EMPTY' ? 'Boş' : qr.filters.lastStatus === 'OTHER' ? 'Diğer' : 'Tümü'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 block">İlçe</span>
+                  <span className="font-semibold text-slate-200 truncate block">
+                    {qr.filters.districts.length > 0 ? qr.filters.districts.join(', ') : 'Tümü'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 block">Bekleme</span>
+                  <span className="font-semibold text-slate-200">
+                    {(qr.filters as any).over90Days ? '> 90 Gün (Acil)' : 'Tümü'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 block">Sıralama</span>
+                  <span className="font-semibold text-slate-200">
+                    {qr.filters.sort === 'DESC' ? 'Büyükten Küçüğe' : 'Küçükten Büyüğe'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tab & Arama Çubuğu */}
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-slate-900/80 p-2.5 rounded-2xl border border-slate-700/60">
+            <div className="flex bg-slate-800/80 p-1 rounded-xl border border-slate-700/50 gap-1">
               <button
+                type="button"
                 onClick={() => setActiveTab('all')}
-                className={`px-4 py-2 text-sm font-bold rounded-md transition-colors flex-1 sm:flex-none ${activeTab === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                className={`flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  activeTab === 'all'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
               >
                 Tümü ({totalCount})
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab('pending')}
-                className={`px-4 py-2 text-sm font-bold rounded-md transition-colors flex-1 sm:flex-none ${activeTab === 'pending' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                className={`flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  activeTab === 'pending'
+                    ? 'bg-amber-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
               >
                 Bekleyen ({totalCount - completedCount})
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab('completed')}
-                className={`px-4 py-2 text-sm font-bold rounded-md transition-colors flex-1 sm:flex-none ${activeTab === 'completed' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                className={`flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  activeTab === 'completed'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
               >
                 Tamamlanan ({completedCount})
               </button>
             </div>
 
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Mahalle, Adres veya BN..."
+            {/* Arama Input */}
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+              <input
+                type="text"
+                placeholder="Adres, BN veya İlçe ara..."
                 value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-9 h-10 bg-slate-50 border-slate-200 text-sm"
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full h-10 pl-9 pr-3 rounded-xl bg-slate-800/80 border border-slate-700 text-xs font-medium text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
               />
             </div>
           </div>
 
-          {/* Data Table */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
-            <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-xs font-bold tracking-wider">
+          {/* ── MOBİL KART GÖRÜNÜMÜ (block sm:hidden) ── */}
+          <div className="block sm:hidden space-y-3">
+            {searchFilteredBoxes.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 text-xs bg-slate-900/60 rounded-2xl border border-slate-800">
+                Aramaya uygun servis kutusu bulunamadı.
+              </div>
+            ) : (
+              searchFilteredBoxes.map((box) => {
+                const completed = isCompleted(box.id);
+                return (
+                  <div
+                    key={box.id}
+                    className={`rounded-2xl border p-4 backdrop-blur-xl transition-all space-y-3 ${
+                      completed
+                        ? 'border-emerald-500/50 bg-emerald-950/15 shadow-md shadow-emerald-500/5 border-l-4 border-l-emerald-500'
+                        : 'border-slate-700/50 bg-slate-900/60 border-l-4 border-l-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="text-sm font-black text-white">{box.connectionObject}</div>
+                        {box.name && (
+                          <div className="text-[11px] text-slate-400 mt-0.5">{box.name}</div>
+                        )}
+                      </div>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                          box.waitingDays >= 90
+                            ? 'bg-red-500/20 text-red-300 border-red-500/30'
+                            : 'bg-slate-700/60 text-slate-300 border-slate-600/30'
+                        }`}
+                      >
+                        {box.waitingDays} Gün
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-slate-400 space-y-1">
+                      <div className="flex items-center gap-1.5 text-slate-300">
+                        <MapPin className="h-3.5 w-3.5 text-red-400 shrink-0" />
+                        <span>{box.district} / {box.neighborhood}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-400 pl-5 line-clamp-2">
+                        {box.address}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleToggleComplete(box.id)}
+                      className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                        completed
+                          ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
+                          : 'bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white'
+                      }`}
+                    >
+                      <Check className={`h-4 w-4 ${completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                      <span>{completed ? 'Kutu Tamamlandı' : 'Tamamlandı Olarak İşaretle'}</span>
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* ── MASAÜSTÜ TABLO GÖRÜNÜMÜ (hidden sm:block) ── */}
+          <div className="hidden sm:block rounded-2xl border border-slate-700/50 bg-slate-900/60 backdrop-blur-xl overflow-hidden overflow-x-auto shadow-xl">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead className="bg-slate-900/90 border-b border-slate-700/50 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 <tr>
-                  <th className="px-4 py-4">No</th>
-                  <th className="px-4 py-4">Bağlantı Nesnesi</th>
-                  <th className="px-4 py-4 min-w-[200px]">Adres</th>
-                  <th className="px-4 py-4">İlçe</th>
-                  <th className="px-4 py-4">Mahalle</th>
-                  <th className="px-4 py-4">Anlaşma Tarihi</th>
-                  <th className="px-4 py-4 text-right">Bekleme Süresi</th>
-                  <th className="px-4 py-4">Son Durum</th>
-                  <th className="px-4 py-4">İsim</th>
-                  <th className="px-4 py-4">Telefon</th>
-                  <th className="px-4 py-4">Sektör</th>
-                  <th className="px-4 py-4 text-center sticky right-0 z-10 bg-slate-50 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.05)] border-l border-slate-200">
-                    Tamamlandı
+                  <th className="px-4 py-3">No</th>
+                  <th className="px-4 py-3">Bağlantı Nesnesi</th>
+                  <th className="px-4 py-3">Adres</th>
+                  <th className="px-4 py-3">İlçe / Mahalle</th>
+                  <th className="px-4 py-3 text-right">Bekleme</th>
+                  <th className="px-4 py-3">Abone Adı</th>
+                  <th className="px-4 py-3 text-center sticky right-0 bg-slate-900 border-l border-slate-800">
+                    Saha Durumu
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-700/25">
                 {searchFilteredBoxes.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="px-4 py-12 text-center text-slate-500">
-                      <span className="block text-base font-bold text-slate-700 mb-1">Kayıt bulunamadı.</span>
-                      Filtrelerinize uygun servis kutusu yok.
+                    <td colSpan={7} className="px-4 py-12 text-center text-slate-500 text-sm">
+                      Filtrelere uygun servis kutusu bulunamadı.
                     </td>
                   </tr>
                 ) : (
                   searchFilteredBoxes.map((box, i) => {
                     const completed = isCompleted(box.id);
-                    const compData = completions.find(c => c.serviceBoxId === box.id);
-
                     return (
                       <tr
                         key={box.id}
-                        className={`transition-all hover:bg-slate-50/50 bg-white ${completed ? 'outline outline-2 outline-emerald-500 relative z-10 shadow-sm' : 'border-b border-transparent'
-                          }`}
+                        className={`transition-colors hover:bg-slate-800/40 ${
+                          completed ? 'bg-emerald-950/15' : ''
+                        }`}
                       >
-                        <td className="px-4 py-3 font-medium text-slate-500">{i + 1}</td>
-                        <td className="px-4 py-3 font-bold text-slate-900">{box.connectionObject}</td>
-                        <td className="px-4 py-3 text-slate-600 truncate max-w-[250px]" title={box.address}>{box.address}</td>
-                        <td className="px-4 py-3 text-slate-700">{box.district}</td>
-                        <td className="px-4 py-3 text-slate-700">{box.neighborhood}</td>
-                        <td className="px-4 py-3 text-slate-500">{box.agreementDate}</td>
-                        <td className="px-4 py-3 text-right">
-                          <span className={`inline-flex px-2 py-1 rounded font-bold text-xs ${box.waitingDays > 30 ? 'bg-red-50 text-red-700' :
-                              box.waitingDays > 15 ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'
-                            }`}>
+                        <td className="px-4 py-3 text-slate-500">{i + 1}</td>
+                        <td className="px-4 py-3 font-bold text-white whitespace-nowrap">
+                          {box.connectionObject}
+                        </td>
+                        <td className="px-4 py-3 text-slate-400 truncate max-w-[220px]" title={box.address}>
+                          {box.address}
+                        </td>
+                        <td className="px-4 py-3 text-slate-300 whitespace-nowrap">
+                          {box.district} <span className="text-slate-500 text-[11px]">/ {box.neighborhood}</span>
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <span
+                            className={`inline-flex px-2 py-0.5 rounded text-[11px] font-bold border ${
+                              box.waitingDays >= 90
+                                ? 'bg-red-500/20 text-red-300 border-red-500/30'
+                                : 'bg-slate-700/50 text-slate-300 border-slate-600/30'
+                            }`}
+                          >
                             {box.waitingDays} Gün
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-slate-500">{box.lastStatus || '-'}</td>
-                        <td className="px-4 py-3 text-slate-700 font-medium">{box.name || '-'}</td>
-                        <td className="px-4 py-3 text-slate-500">{box.phone || '-'}</td>
-                        <td className="px-4 py-3 text-slate-500">{box.sectorInfo || '-'}</td>
-
-                        {/* Sticky Action Column */}
-                        <td className="px-4 py-2 text-center sticky right-0 z-10 bg-white border-l border-slate-100 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.02)]">
-                          <Button
-                            size="sm"
+                        <td className="px-4 py-3 text-slate-300 truncate max-w-[140px]">
+                          {box.name || '—'}
+                        </td>
+                        <td className="px-4 py-2 text-center sticky right-0 bg-slate-900/90 border-l border-slate-800/80">
+                          <button
+                            type="button"
                             onClick={() => handleToggleComplete(box.id)}
-                            className={`font-bold min-w-[140px] h-9 border-2 transition-colors ${completed
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-500 hover:bg-emerald-100/70 hover:text-emerald-800'
-                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                              }`}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1.5 transition-all ${
+                              completed
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm shadow-emerald-500/10'
+                                : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white hover:bg-slate-700'
+                            }`}
                           >
-                            <Check className={`h-4 w-4 mr-2 ${completed ? 'text-emerald-600' : 'text-slate-300'}`} />
-                            Tamamlandı
-                          </Button>
+                            <Check className={`h-3.5 w-3.5 ${completed ? 'text-emerald-400' : 'text-slate-500'}`} />
+                            <span>{completed ? 'Tamamlandı' : 'Tamamla'}</span>
+                          </button>
                         </td>
                       </tr>
                     );
@@ -376,8 +537,10 @@ export default function MobileQRDetailPage() {
               </tbody>
             </table>
           </div>
-        </div>
+
+        </main>
       </div>
+
     </div>
   );
 }
