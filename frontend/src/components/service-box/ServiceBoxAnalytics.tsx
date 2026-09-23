@@ -3,19 +3,12 @@ import { useMemo } from 'react';
 import { ServiceBox } from '@/types';
 import { WaitingDayRange } from '@/components/dashboard/FilterBar';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Cell, Legend,
 } from 'recharts';
-import { BarChart3, PieChart as PieIcon, AlertTriangle, Building2, CheckCircle2 } from 'lucide-react';
+import {
+  BarChart3, AlertTriangle, Building2, Box, Clock,
+} from 'lucide-react';
 
 interface Props {
   boxes: ServiceBox[];
@@ -25,258 +18,293 @@ interface Props {
   selectedDistrict?: string;
 }
 
-const RANGE_COLORS: Record<string, string> = {
-  '<15': '#ef4444',
-  '15-30': '#f97316',
-  '30-45': '#f59e0b',
-  '45-60': '#eab308',
-  '60-75': '#3b82f6',
-  '75-90': '#6366f1',
-  '>90': '#a855f7',
-};
-
-const RANGES: { key: WaitingDayRange; label: string }[] = [
-  { key: '<15', label: '< 15 Gün' },
-  { key: '15-30', label: '15-30 Gün' },
-  { key: '30-45', label: '30-45 Gün' },
-  { key: '45-60', label: '45-60 Gün' },
-  { key: '60-75', label: '60-75 Gün' },
-  { key: '75-90', label: '75-90 Gün' },
-  { key: '>90', label: '> 90 Gün' },
+/* ── Palette ───────────────────────────────────────────── */
+const RANGE_META: { key: WaitingDayRange; label: string; color: string; glow: string }[] = [
+  { key: '<15',   label: '< 15 Gün',  color: '#ef4444', glow: 'rgba(239,68,68,0.35)' },
+  { key: '15-30', label: '15–30 Gün', color: '#f97316', glow: 'rgba(249,115,22,0.35)' },
+  { key: '30-45', label: '30–45 Gün', color: '#f59e0b', glow: 'rgba(245,158,11,0.35)' },
+  { key: '45-60', label: '45–60 Gün', color: '#eab308', glow: 'rgba(234,179,8,0.35)' },
+  { key: '60-75', label: '60–75 Gün', color: '#3b82f6', glow: 'rgba(59,130,246,0.35)' },
+  { key: '75-90', label: '75–90 Gün', color: '#6366f1', glow: 'rgba(99,102,241,0.35)' },
+  { key: '>90',   label: '> 90 Gün',  color: '#a855f7', glow: 'rgba(168,85,247,0.35)' },
 ];
 
-function matchWaitingDayRange(days: number, range: WaitingDayRange): boolean {
+const PIE_COLORS = ['#f59e0b', '#3b82f6', '#10b981'];
+
+function matchRange(days: number, range: WaitingDayRange): boolean {
   switch (range) {
-    case '<15': return days < 15;
+    case '<15':   return days < 15;
     case '15-30': return days >= 15 && days < 30;
     case '30-45': return days >= 30 && days < 45;
     case '45-60': return days >= 45 && days < 60;
     case '60-75': return days >= 60 && days < 75;
     case '75-90': return days >= 75 && days < 90;
-    case '>90': return days >= 90;
-    default: return true;
+    case '>90':   return days >= 90;
+    default:      return true;
   }
 }
 
-export function ServiceBoxAnalytics({
-  boxes,
-  onSelectRange,
-  onSelectDistrict,
-  selectedRange,
-  selectedDistrict,
-}: Props) {
-  /* 1. Bekleme Süre Dağılımı Bar Chart Verisi */
-  const rangeData = useMemo(() => {
-    return RANGES.map(({ key, label }) => {
-      const count = boxes.filter((b) => matchWaitingDayRange(b.waitingDays, key)).length;
-      return {
-        key,
-        name: label,
-        'Kutu Sayısı': count,
-        color: RANGE_COLORS[key],
-      };
-    });
-  }, [boxes]);
+/* ── Custom Tooltip ─────────────────────────────────────── */
+const DarkTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-slate-900/95 border border-slate-700/60 rounded-xl px-4 py-3 shadow-2xl backdrop-blur-md">
+      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">{label}</p>
+      {payload.map((p: any, i: number) => (
+        <div key={i} className="flex items-center gap-2 text-xs">
+          <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: p.color || p.fill }} />
+          <span className="text-slate-300 font-medium">{p.name}:</span>
+          <span className="text-white font-bold">{p.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
-  /* 2. İlçe Bazlı Dağılım Bar Chart Verisi */
+/* ── KPI Card ───────────────────────────────────────────── */
+function KPICard({
+  label, value, sub, icon: Icon, colorClass, bgClass, glowClass,
+}: {
+  label: string; value: number | string; sub?: string;
+  icon: React.ElementType; colorClass: string; bgClass: string; glowClass: string;
+}) {
+  return (
+    <div className={`relative overflow-hidden rounded-2xl border border-slate-700/40 bg-slate-800/50 backdrop-blur-sm p-5 flex items-start justify-between group transition-all duration-300 hover:border-slate-600/60 hover:bg-slate-800/70`}>
+      {/* Glow */}
+      <div className={`absolute -top-4 -right-4 w-20 h-20 rounded-full blur-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-500 ${glowClass}`} />
+      <div>
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-2">{label}</p>
+        <p className={`text-3xl font-black ${colorClass} leading-none`}>{value}</p>
+        {sub && <p className="text-[11px] text-slate-500 mt-1.5 font-medium">{sub}</p>}
+      </div>
+      <div className={`p-3 rounded-xl ${bgClass} flex-shrink-0`}>
+        <Icon className={`h-5 w-5 ${colorClass}`} />
+      </div>
+    </div>
+  );
+}
+
+/* ── Chart Section Card ─────────────────────────────────── */
+function ChartCard({ title, subtitle, icon: Icon, iconColor, children }: {
+  title: string; subtitle?: string; icon: React.ElementType;
+  iconColor: string; children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-700/40 bg-slate-800/50 backdrop-blur-sm overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700/30">
+        <div className="flex items-center gap-2.5">
+          <div className={`p-1.5 rounded-lg bg-slate-700/50`}>
+            <Icon className={`h-4 w-4 ${iconColor}`} />
+          </div>
+          <span className="text-sm font-semibold text-slate-100">{title}</span>
+        </div>
+        {subtitle && (
+          <span className="text-[11px] text-slate-500 font-medium hidden sm:block">{subtitle}</span>
+        )}
+      </div>
+      <div className="p-5">{children}</div>
+    </div>
+  );
+}
+
+/* ══ Main Component ═══════════════════════════════════════ */
+export function ServiceBoxAnalytics({ boxes, onSelectRange, onSelectDistrict, selectedRange, selectedDistrict }: Props) {
+
+  /* Computed data */
+  const rangeData = useMemo(() =>
+    RANGE_META.map(({ key, label, color }) => ({
+      key, name: label, color,
+      'Kutu Sayısı': boxes.filter((b) => matchRange(b.waitingDays, key)).length,
+    })),
+  [boxes]);
+
   const districtData = useMemo(() => {
     const map: Record<string, { total: number; empty: number; filled: number }> = {};
     boxes.forEach((b) => {
       const d = b.district || 'Belirtilmedi';
       if (!map[d]) map[d] = { total: 0, empty: 0, filled: 0 };
       map[d].total++;
-      if (!b.lastStatus) map[d].empty++;
-      else map[d].filled++;
+      if (!b.lastStatus) map[d].empty++; else map[d].filled++;
     });
-
     return Object.entries(map)
-      .map(([name, val]) => ({
-        name,
-        'Toplam Kutu': val.total,
-        'Durumu Boş': val.empty,
-        'Durumu Diğer': val.filled,
-      }))
-      .sort((a, b) => b['Toplam Kutu'] - a['Toplam Kutu']);
+      .map(([name, v]) => ({ name, 'Durumu Boş': v.empty, 'Durumu Diğer': v.filled, 'Toplam': v.total }))
+      .sort((a, b) => b['Toplam'] - a['Toplam'])
+      .slice(0, 12); // top 12 districts
   }, [boxes]);
 
-  /* 3. Durum Dağılımı Pie Chart Verisi */
-  const statusPieData = useMemo(() => {
-    const emptyCount = boxes.filter((b) => !b.lastStatus).length;
-    const filledCount = boxes.length - emptyCount;
-    return [
-      { name: 'Son Durumu Boş', value: emptyCount, color: '#f59e0b' },
-      { name: 'Son Durumu Diğer', value: filledCount, color: '#3b82f6' },
-    ];
-  }, [boxes]);
+  const criticalCount = boxes.filter((b) => b.waitingDays >= 90).length;
+  const avgWaiting    = boxes.length ? Math.round(boxes.reduce((s, b) => s + b.waitingDays, 0) / boxes.length) : 0;
+  const emptyCount    = boxes.filter((b) => !b.lastStatus).length;
+  const emptyPct      = boxes.length ? Math.round((emptyCount / boxes.length) * 100) : 0;
 
   return (
-    <div className="space-y-6">
-      {/* ── KPI Özet Şeridi ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Toplam Kutu</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{boxes.length}</p>
-          </div>
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-            <Building2 className="h-6 w-6" />
-          </div>
-        </div>
+    <div className="space-y-5">
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Kritik (&ge;90 Gün)</p>
-            <p className="text-2xl font-bold text-red-600 mt-1">
-              {boxes.filter((b) => b.waitingDays >= 90).length}
-            </p>
-          </div>
-          <div className="p-3 bg-red-50 text-red-600 rounded-xl">
-            <AlertTriangle className="h-6 w-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Durumu Boş</p>
-            <p className="text-2xl font-bold text-amber-600 mt-1">
-              {boxes.filter((b) => !b.lastStatus).length}
-            </p>
-          </div>
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-            <AlertTriangle className="h-6 w-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Durumu Diğer</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">
-              {boxes.filter((b) => !!b.lastStatus).length}
-            </p>
-          </div>
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-            <CheckCircle2 className="h-6 w-6" />
-          </div>
-        </div>
+      {/* ══ KPI Strip ══════════════════════════════════════════════ */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <KPICard
+          label="Toplam Kutu"
+          value={boxes.length.toLocaleString('tr')}
+          sub="kayıt"
+          icon={Box}
+          colorClass="text-blue-400"
+          bgClass="bg-blue-500/10"
+          glowClass="bg-blue-500"
+        />
+        <KPICard
+          label="Kritik (≥ 90 Gün)"
+          value={criticalCount}
+          sub={boxes.length ? `%${Math.round(criticalCount/boxes.length*100)} oranında` : ''}
+          icon={AlertTriangle}
+          colorClass="text-red-400"
+          bgClass="bg-red-500/10"
+          glowClass="bg-red-500"
+        />
+        <KPICard
+          label="Durumu Boş"
+          value={emptyCount}
+          sub={`%${emptyPct} oran`}
+          icon={AlertTriangle}
+          colorClass="text-amber-400"
+          bgClass="bg-amber-500/10"
+          glowClass="bg-amber-500"
+        />
+        <KPICard
+          label="Ort. Bekleme"
+          value={`${avgWaiting}`}
+          sub="gün"
+          icon={Clock}
+          colorClass="text-emerald-400"
+          bgClass="bg-emerald-500/10"
+          glowClass="bg-emerald-500"
+        />
       </div>
 
-      {/* ── Grafikler Ana Izgarası ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Grafik 1: Bekleme Süresi Dağılımı (Bar Chart) */}
-        <div className="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b pb-3">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
-              <h3 className="font-semibold text-slate-900 text-sm">Bekleme Süresi Dağılımı (Gün)</h3>
+      {/* ══ Row 1: Bekleme Bar — full width ══════════════════════ */}
+      <div>
+        <ChartCard
+          title="Bekleme Süresi Dağılımı"
+          subtitle="Bir çubuğa tıklayarak filtreleyin"
+          icon={BarChart3}
+          iconColor="text-blue-400"
+        >
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={rangeData} margin={{ top: 8, right: 8, left: -24, bottom: 0 }} barCategoryGap="30%">
+                  <defs>
+                    {RANGE_META.map(({ key, color }) => (
+                      <linearGradient key={key} id={`grad-${key}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={color} stopOpacity={0.95} />
+                        <stop offset="100%" stopColor={color} stopOpacity={0.55} />
+                      </linearGradient>
+                    ))}
+                  </defs>
+                  <CartesianGrid strokeDasharray="2 4" vertical={false} stroke="rgba(148,163,184,0.08)" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }}
+                    axisLine={false} tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: '#64748b' }}
+                    axisLine={false} tickLine={false}
+                    width={32}
+                  />
+                  <Tooltip content={<DarkTooltip />} cursor={{ fill: 'rgba(148,163,184,0.06)', radius: 6 }} />
+                  <Bar
+                    dataKey="Kutu Sayısı"
+                    radius={[6, 6, 2, 2]}
+                    onClick={(entry) => onSelectRange && entry?.key && onSelectRange(entry.key as WaitingDayRange)}
+                    className="cursor-pointer"
+                  >
+                    {rangeData.map((entry, i) => (
+                      <Cell
+                        key={i}
+                        fill={`url(#grad-${entry.key})`}
+                        opacity={selectedRange && selectedRange !== 'all' && selectedRange !== entry.key ? 0.25 : 1}
+                        stroke={selectedRange === entry.key ? entry.color : 'transparent'}
+                        strokeWidth={1.5}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-            <span className="text-xs text-slate-400">Grafikte bir çubuğa tıklayarak filtreleyin</span>
-          </div>
 
-          <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={rangeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', borderRadius: '8px', border: 'none', color: '#fff', fontSize: '12px' }}
-                  itemStyle={{ color: '#60a5fa' }}
-                />
-                <Bar
-                  dataKey="Kutu Sayısı"
-                  radius={[6, 6, 0, 0]}
-                  onClick={(entry) => {
-                    if (onSelectRange && entry && entry.key) {
-                      onSelectRange(entry.key as WaitingDayRange);
-                    }
-                  }}
-                  className="cursor-pointer"
+            {/* Color legend row */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 pt-3 border-t border-slate-700/30">
+              {RANGE_META.map(({ key, label, color }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => onSelectRange && onSelectRange(key)}
+                  className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 hover:text-slate-200 transition-colors"
                 >
-                  {rangeData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.color}
-                      opacity={selectedRange && selectedRange !== 'all' && selectedRange !== entry.key ? 0.4 : 1}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Grafik 2: Durum Oranı (Pie Chart) */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4 flex flex-col justify-between">
-          <div className="flex items-center gap-2 border-b pb-3">
-            <PieIcon className="h-5 w-5 text-indigo-600" />
-            <h3 className="font-semibold text-slate-900 text-sm">Son Durum Oranları</h3>
-          </div>
-
-          <div className="h-64 w-full relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={statusPieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={85}
-                  paddingAngle={4}
-                  dataKey="value"
-                >
-                  {statusPieData.map((entry, index) => (
-                    <Cell key={`pie-cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', borderRadius: '8px', border: 'none', color: '#fff', fontSize: '12px' }}
-                />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+                  <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: color }} />
+                  {label}
+                </button>
+              ))}
+            </div>
+        </ChartCard>
       </div>
 
-      {/* Grafik 3: İlçe Bazlı Kutu Yoğunluğu */}
-      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b pb-3">
-          <div className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-emerald-600" />
-            <h3 className="font-semibold text-slate-900 text-sm">İlçe Bazlı Servis Kutusu Dağılımı</h3>
-          </div>
-          <span className="text-xs text-slate-400">İlçeye göre durum karşılaştırması</span>
-        </div>
-
+      {/* ══ Row 2: İlçe Stacked Bar ════════════════════════════════ */}
+      <ChartCard
+        title="İlçe Bazlı Servis Kutusu Dağılımı"
+        subtitle="İlçe sütununa tıklayarak filtreleyin"
+        icon={Building2}
+        iconColor="text-emerald-400"
+      >
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={districtData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#0f172a', borderRadius: '8px', border: 'none', color: '#fff', fontSize: '12px' }}
+            <BarChart data={districtData} margin={{ top: 8, right: 8, left: -20, bottom: 20 }} barCategoryGap="28%">
+              <defs>
+                <linearGradient id="grad-empty" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.9} />
+                  <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.5} />
+                </linearGradient>
+                <linearGradient id="grad-filled" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9} />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.5} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="2 4" vertical={false} stroke="rgba(148,163,184,0.08)" />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }}
+                axisLine={false} tickLine={false}
+                angle={-30} textAnchor="end" height={40}
+                interval={0}
+              />
+              <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} width={32} />
+              <Tooltip content={<DarkTooltip />} cursor={{ fill: 'rgba(148,163,184,0.06)', radius: 6 }} />
+              <Legend
+                wrapperStyle={{ fontSize: '11px', paddingTop: '12px', color: '#94a3b8' }}
+                formatter={(value) => <span style={{ color: '#94a3b8', fontWeight: 600 }}>{value}</span>}
               />
               <Bar
                 dataKey="Durumu Boş"
-                fill="#f59e0b"
+                fill="url(#grad-empty)"
                 stackId="a"
-                radius={[0, 0, 0, 0]}
-                onClick={(entry) => onSelectDistrict && entry && onSelectDistrict(entry.name)}
+                radius={[0, 0, 2, 2]}
+                onClick={(e) => onSelectDistrict && e?.name && onSelectDistrict(e.name)}
                 className="cursor-pointer"
+                opacity={selectedDistrict && selectedDistrict !== 'all' ? 0.7 : 1}
               />
               <Bar
                 dataKey="Durumu Diğer"
-                fill="#3b82f6"
+                fill="url(#grad-filled)"
                 stackId="a"
                 radius={[6, 6, 0, 0]}
-                onClick={(entry) => onSelectDistrict && entry && onSelectDistrict(entry.name)}
+                onClick={(e) => onSelectDistrict && e?.name && onSelectDistrict(e.name)}
                 className="cursor-pointer"
+                opacity={selectedDistrict && selectedDistrict !== 'all' ? 0.7 : 1}
               />
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </ChartCard>
+
     </div>
   );
 }
