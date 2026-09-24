@@ -246,6 +246,9 @@ export default function QRManagementPage() {
     }
   };
 
+  const emptyBoxesCount = useMemo(() => serviceBoxes.filter((b) => !b.lastStatus || b.lastStatus.trim() === '').length, [serviceBoxes]);
+  const otherBoxesCount = useMemo(() => serviceBoxes.length - emptyBoxesCount, [serviceBoxes, emptyBoxesCount]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-3 text-slate-400">
@@ -255,66 +258,9 @@ export default function QRManagementPage() {
     );
   }
 
-  const emptyBoxesCount  = serviceBoxes.filter((b) => !b.lastStatus || b.lastStatus.trim() === '').length;
-  const otherBoxesCount  = serviceBoxes.length - emptyBoxesCount;
-  const overdueCount     = serviceBoxes.filter((b) => b.waitingDays > 90).length;
-  const activeTeamsCount = teams.filter((t) => t.status === 'Aktif').length;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100">
       <div className="mx-auto max-w-[1600px] space-y-6 p-4 sm:p-7">
-
-        {/* ══ 1. HERO OPERATIONAL BANNER ════════════════════════════════ */}
-        <div className="relative overflow-hidden rounded-2xl border border-slate-700/40 bg-slate-800/60 backdrop-blur-md shadow-2xl p-6 sm:p-8">
-          {/* Ambient lighting */}
-          <div className="pointer-events-none absolute inset-0">
-            <div className="absolute -top-20 left-1/4 w-80 h-80 rounded-full bg-blue-600/10 blur-3xl" />
-            <div className="absolute top-1/2 right-12 w-72 h-72 rounded-full bg-purple-600/10 blur-3xl" />
-          </div>
-
-          <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="space-y-2 max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs font-bold text-purple-300">
-                <span className="h-2 w-2 rounded-full bg-purple-400 animate-pulse shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
-                Saha İş Emri & Sevk Modülü
-              </div>
-
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white">
-                QR KOD & DİJİTAL İŞ EMRİ YÖNETİMİ
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Servis kutuları portföyünü kriterlere göre süzün, sahada mobil uygulama ile okutulabilen QR iş paketleri oluşturun veya PDF iş listesi çıktısı alın.
-              </p>
-            </div>
-
-            {/* Quick KPI Strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
-              <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3 min-w-[110px]">
-                <div className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Toplam Kutu</div>
-                <div className="text-xl sm:text-2xl font-black text-white mt-1">{serviceBoxes.length}</div>
-                <div className="text-[10px] text-blue-400/80">kayıtlı abone</div>
-              </div>
-
-              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 min-w-[110px]">
-                <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Filtrelenen</div>
-                <div className="text-xl sm:text-2xl font-black text-emerald-300 mt-1">{filteredList.length}</div>
-                <div className="text-[10px] text-emerald-400/80">pakete hazır</div>
-              </div>
-
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 min-w-[110px]">
-                <div className="text-[10px] font-bold text-red-400 uppercase tracking-wider">90+ Gün Aşım</div>
-                <div className="text-xl sm:text-2xl font-black text-red-300 mt-1">{overdueCount}</div>
-                <div className="text-[10px] text-red-400/80">yasal risk</div>
-              </div>
-
-              <div className="rounded-xl border border-purple-500/20 bg-purple-500/10 p-3 min-w-[110px]">
-                <div className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">Saha Ekipleri</div>
-                <div className="text-xl sm:text-2xl font-black text-purple-300 mt-1">{activeTeamsCount} Aktif</div>
-                <div className="text-[10px] text-purple-400/80">{teams.length} ekip hazır</div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* ══ 2. WORKFLOW STEPPER ══════════════════════════════════════ */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
