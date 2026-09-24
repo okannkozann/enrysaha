@@ -1,19 +1,80 @@
 'use client';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, AreaChart, Area, Legend, Line,
 } from 'recharts';
+import { TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
 
+/* ─── Custom Tooltip ──────────────────────────────────────────────────── */
+const ChartTooltip = ({ active, payload, label }: {
+  active?: boolean;
+  payload?: { name: string; value: number; color: string }[];
+  label?: string;
+}) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-800/95 border border-slate-700/60 rounded-2xl shadow-2xl px-4 py-3 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
+        {label && <p className="text-slate-400 font-semibold mb-2">{label}</p>}
+        {payload.map((e, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full" style={{ background: e.color }} />
+            <span className="text-slate-400">{e.name}:</span>
+            <span className="text-slate-100 font-bold">{e.value}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+/* ─── KPI Card ─────────────────────────────────────────────────────────── */
+function KpiCard({ label, value, change, up, alert }: {
+  label: string; value: string; change: string; up?: boolean; alert?: boolean;
+}) {
+  return (
+    <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-3.5 shadow-2xl">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{label}</p>
+        {alert
+          ? <span className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center"><AlertCircle className="h-3 w-3 text-red-400" /></span>
+          : up
+            ? <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center"><TrendingUp className="h-3 w-3 text-emerald-400" /></span>
+            : <span className="w-5 h-5 rounded-full bg-slate-700/60 flex items-center justify-center"><TrendingDown className="h-3 w-3 text-slate-400" /></span>
+        }
+      </div>
+      <p className="text-xl font-extrabold text-slate-100 tracking-tight">{value}</p>
+      <p className={`text-xs font-medium mt-0.5 ${up ? 'text-emerald-400' : alert ? 'text-red-400' : 'text-slate-500'}`}>
+        {up ? '▲' : '▼'} {change}
+      </p>
+    </div>
+  );
+}
+
+/* ─── Chart Card ───────────────────────────────────────────────────────── */
+function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
+      <div className="mb-5">
+        <h2 className="text-sm font-bold text-slate-200">{title}</h2>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/* ─── Page ─────────────────────────────────────────────────────────────── */
 export default function ReportsPage() {
-  const dailyProductionData = [
-    { name: 'Pzt', PE: 400, ST: 240, Servis: 120 },
-    { name: 'Sal', PE: 300, ST: 139, Servis: 220 },
-    { name: 'Çar', PE: 200, ST: 980, Servis: 229 },
-    { name: 'Per', PE: 278, ST: 390, Servis: 200 },
-    { name: 'Cum', PE: 189, ST: 480, Servis: 218 },
-    { name: 'Cmt', PE: 239, ST: 380, Servis: 250 },
-    { name: 'Paz', PE: 349, ST: 430, Servis: 210 },
+
+  /* Data */
+  const weeklyProductionData = [
+    { name: 'Pzt', toplam: 760, hedef: 700 },
+    { name: 'Sal', toplam: 659, hedef: 700 },
+    { name: 'Çar', toplam: 1409, hedef: 700 },
+    { name: 'Per', toplam: 868, hedef: 700 },
+    { name: 'Cum', toplam: 887, hedef: 700 },
+    { name: 'Cmt', toplam: 869, hedef: 700 },
+    { name: 'Paz', toplam: 989, hedef: 700 },
   ];
 
   const teamPerformanceData = [
@@ -25,124 +86,226 @@ export default function ReportsPage() {
     { name: 'Ekip 06', imalat: 1300 },
   ];
 
-  const sectorDistributionData = [
+  const sectorData = [
     { name: 'Kepez', value: 400 },
     { name: 'Muratpaşa', value: 300 },
     { name: 'Konyaaltı', value: 300 },
     { name: 'Aksu', value: 200 },
   ];
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+  const workTypeData = [
+    { name: 'PE Ana Hat', value: 45 },
+    { name: 'Servis Hattı', value: 25 },
+    { name: 'ST Çelik Hat', value: 20 },
+    { name: 'Servis Kutusu', value: 10 },
+  ];
+
+  const trendData = [
+    { name: '1 Eyl', tamamlanan: 12, hedef: 20 },
+    { name: '8 Eyl', tamamlanan: 25, hedef: 20 },
+    { name: '15 Eyl', tamamlanan: 45, hedef: 40 },
+    { name: '22 Eyl', tamamlanan: 38, hedef: 40 },
+    { name: '29 Eyl', tamamlanan: 65, hedef: 50 },
+  ];
+
+  /* Corporate color palette */
+  // Ekip performansı — navy→sky mavi gradyan
+  const TEAM_COLORS = ['#1e3a8a', '#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd'];
+  // Bölge dağılımı — mavi, cyan, emerald, amber
+  const PIE_COLORS = ['#1d4ed8', '#0891b2', '#059669', '#d97706'];
+  // İmalat türü — steel blue tonları
+  const TYPE_COLORS = ['#1e3a8a', '#1e40af', '#1d4ed8', '#2563eb'];
+
+  const total = sectorData.reduce((a, b) => a + b.value, 0);
+
+  const axisStyle = { fill: '#64748b', fontSize: 11, fontFamily: 'Inter, sans-serif' };
+  const gridStroke = '#1e293b';
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Raporlar ve Analizler</h1>
-        <p className="text-sm text-slate-500 mt-1">Saha üretim verileri ve ekip performans metrikleri</p>
+    <div className="min-h-screen bg-slate-950 p-4 md:p-8 font-sans">
+      {/* Ambient background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 right-1/3 w-[500px] h-[500px] bg-violet-600/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-indigo-600/8 rounded-full blur-[120px]" />
       </div>
+      <div className="relative z-10 max-w-[1600px] mx-auto space-y-5">
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>Günlük İmalat Miktarları (m)</CardTitle>
-            <CardDescription>Son 7 günün hat tipi bazında imalat metreleri</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={dailyProductionData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                <YAxis axisLine={false} tickLine={false} />
-                <Tooltip cursor={{ fill: '#f1f5f9' }} />
-                <Legend />
-                <Bar dataKey="PE" stackId="a" fill="#3b82f6" name="PE Ana Hat" radius={[0, 0, 4, 4]} />
-                <Bar dataKey="ST" stackId="a" fill="#10b981" name="ST Çelik Hat" />
-                <Bar dataKey="Servis" stackId="a" fill="#f59e0b" name="Servis Hattı" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-lg font-bold text-slate-100 tracking-tight">Raporlar ve Analizler</h1>
+            <p className="text-slate-400 text-xs mt-0.5">Saha üretim verileri ve ekip performans metrikleri</p>
+          </div>
+          <div className="text-xs text-slate-400 bg-slate-800/60 border border-slate-700/50 rounded-xl px-3 py-1.5 font-medium">
+            Eylül 2026
+          </div>
+        </div>
 
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>Ekip Performansları (Aylık Toplam)</CardTitle>
-            <CardDescription>Ekiplerin bu ay içerisindeki toplam imalat metrajları</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={teamPerformanceData}
-                layout="vertical"
-                margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                <XAxis type="number" axisLine={false} tickLine={false} />
-                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} />
-                <Tooltip cursor={{ fill: '#f1f5f9' }} />
-                <Bar dataKey="imalat" fill="#6366f1" name="Toplam İmalat (m)" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {/* KPI Row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <KpiCard label="Toplam Metraj" value="8.230 m" change="10% geçen haftaya göre" up />
+          <KpiCard label="Aktif Ekip" value="6" change="10% artış" up />
+          <KpiCard label="Tamamlanan Kutu" value="65" change="8% geçen aya göre" up />
+          <KpiCard label="Hedef Sapması" value="%16" change="Hedefin üzerinde" alert />
+        </div>
 
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>Sektör Bazlı İş Yükü Dağılımı</CardTitle>
-            <CardDescription>Açık servis kutusu kayıtlarının bölgelere göre dağılımı</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px] flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={sectorDistributionData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {sectorDistributionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {/* Row 2 — 3 columns */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>Tamamlanma Trendi</CardTitle>
-            <CardDescription>Son 30 gün içinde tamamlanan servis kutusu sayısı</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={[
-                  { name: '1 Eyl', tamamlanan: 12 },
-                  { name: '8 Eyl', tamamlanan: 25 },
-                  { name: '15 Eyl', tamamlanan: 45 },
-                  { name: '22 Eyl', tamamlanan: 38 },
-                  { name: '29 Eyl', tamamlanan: 65 },
-                ]}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                <YAxis axisLine={false} tickLine={false} />
-                <Tooltip />
-                <Line type="monotone" dataKey="tamamlanan" stroke="#0ea5e9" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Tamamlanan İş" />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          {/* Donut — İmalat Türü */}
+          <ChartCard title="İmalat Türü Dağılımı">
+            <div className="flex items-center gap-4 h-[220px]">
+              <ResponsiveContainer width="55%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={workTypeData}
+                    cx="50%" cy="50%"
+                    innerRadius={55} outerRadius={85}
+                    dataKey="value" stroke="none"
+                  >
+                    {workTypeData.map((_, i) => (
+                      <Cell key={i} fill={TYPE_COLORS[i % TYPE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<ChartTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex flex-col gap-2 flex-1">
+                {workTypeData.map((entry, i) => (
+                  <div key={entry.name} className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: TYPE_COLORS[i] }} />
+                    <span className="text-xs text-slate-400 truncate">{entry.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </ChartCard>
+
+          {/* Horizontal Bar — Ekip Performansı */}
+          <ChartCard title="Ekip Metraj Performansı">
+            <div className="h-[220px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={teamPerformanceData} layout="vertical" margin={{ top: 0, right: 10, left: 38, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={gridStroke} />
+                  <XAxis type="number" axisLine={false} tickLine={false} tick={axisStyle} />
+                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={axisStyle} />
+                  <Tooltip content={<ChartTooltip />} cursor={{ fill: '#f5f3ff' }} />
+                  <Bar dataKey="imalat" name="İmalat (m)" radius={[0, 6, 6, 0]}>
+                    {teamPerformanceData.map((_, i) => (
+                      <Cell key={i} fill={TEAM_COLORS[i % TEAM_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </ChartCard>
+
+          {/* Pie — Bölge Dağılımı */}
+          <ChartCard title="Bölge Bazlı İş Yükü">
+            <div className="flex items-center gap-4 h-[220px]">
+              <ResponsiveContainer width="55%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={sectorData}
+                    cx="50%" cy="50%"
+                    outerRadius={85}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {sectorData.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<ChartTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex flex-col gap-2.5 flex-1">
+                {sectorData.map((entry, i) => {
+                  const pct = Math.round((entry.value / total) * 100);
+                  return (
+                    <div key={entry.name}>
+                      <div className="flex justify-between text-xs mb-0.5">
+                        <span className="text-slate-300 font-medium">{entry.name}</span>
+                        <span className="text-slate-500">{pct}%</span>
+                      </div>
+                      <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: PIE_COLORS[i] }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </ChartCard>
+        </div>
+
+        {/* Row 3 — 2 columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+          {/* Area Chart — Haftalık İmalat */}
+          <ChartCard title="Haftalık İmalat Trendi">
+            <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
+              <span className="flex items-center gap-1"><span className="w-3 h-1 bg-cyan-500 rounded inline-block" /> Gerçekleşen</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-1 bg-slate-600 border-dashed border-t-2 inline-block" /> Hedef</span>
+              <span className="ml-auto text-emerald-400 font-semibold flex items-center gap-1"><TrendingUp className="h-3 w-3" /> %8 artış</span>
+            </div>
+            <div className="h-[240px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={weeklyProductionData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gradCyan" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#0891b2" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#0891b2" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gradSlate" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#475569" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="#475569" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridStroke} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={axisStyle} />
+                  <YAxis axisLine={false} tickLine={false} tick={axisStyle} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Area type="monotone" dataKey="hedef" stroke="#475569" strokeWidth={2} strokeDasharray="6 4" fill="url(#gradSlate)" name="Hedef (m)" dot={false} />
+                  <Area type="monotone" dataKey="toplam" stroke="#0891b2" strokeWidth={2.5} fill="url(#gradCyan)" name="Gerçekleşen (m)" dot={{ r: 4, fill: '#0891b2', stroke: '#cffafe', strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </ChartCard>
+
+          {/* Bar + Line — Tamamlanma Trendi */}
+          <ChartCard title="Tamamlanma Trendi">
+            <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-blue-500 inline-block" /> Tamamlanan</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-1 border-dashed border-t-2 border-slate-600 inline-block" /> Hedef Seyri</span>
+              <span className="ml-auto text-emerald-400 font-semibold flex items-center gap-1"><TrendingUp className="h-3 w-3" /> %10 artış</span>
+            </div>
+            <div className="h-[240px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={trendData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridStroke} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={axisStyle} />
+                  <YAxis axisLine={false} tickLine={false} tick={axisStyle} />
+                  <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(37,99,235,0.08)' }} />
+                  <Bar dataKey="tamamlanan" name="Tamamlanan" fill="#2563eb" radius={[6, 6, 0, 0]} opacity={0.85} />
+                  <Line
+                    type="monotone"
+                    dataKey="hedef"
+                    stroke="#475569"
+                    strokeWidth={2}
+                    strokeDasharray="6 4"
+                    dot={false}
+                    name="Hedef Seyri"
+                    legendType="none"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </ChartCard>
+
+        </div>
       </div>
     </div>
   );
 }
+

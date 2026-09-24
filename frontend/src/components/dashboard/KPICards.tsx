@@ -19,11 +19,10 @@ export function KPICards({ kpis }: { kpis: ExtendedDashboardKPIs }) {
       title: "Toplam Servis Kutusu",
       value: kpis.totalServiceBoxes,
       icon: Box,
-      accent: "from-blue-500/20 to-blue-600/5",
-      border: "border-blue-500/25",
+      border: "border-blue-500/30",
       iconBg: "bg-blue-500/15",
       iconColor: "text-blue-400",
-      glow: "rgba(59,130,246,0.2)",
+      glow: "rgba(59,130,246,0.15)",
       sub: `${kpis.completedBoxes} tamamlandı (${kpis.completionRate})`,
       subColor: "text-blue-300",
     },
@@ -31,93 +30,77 @@ export function KPICards({ kpis }: { kpis: ExtendedDashboardKPIs }) {
       title: "Yasal Risk (90+ Gün)",
       value: kpis.overdueBoxes,
       icon: AlertTriangle,
-      accent: "from-red-500/20 to-red-600/5",
-      border: "border-red-500/25",
+      border: "border-red-500/30",
       iconBg: "bg-red-500/15",
       iconColor: "text-red-400",
-      glow: "rgba(239,68,68,0.25)",
-      sub: "EPDK yasal limit aşımı",
+      glow: "rgba(239,68,68,0.2)",
+      sub: "EPDK Yasal Limit Aşımı",
       subColor: "text-red-300 font-semibold",
     },
     {
       title: "Kritik Eşik (60–90 Gün)",
       value: kpis.nearLimitBoxes,
       icon: Clock,
-      accent: "from-amber-500/20 to-amber-600/5",
-      border: "border-amber-500/25",
+      border: "border-amber-500/30",
       iconBg: "bg-amber-500/15",
       iconColor: "text-amber-400",
-      glow: "rgba(245,158,11,0.2)",
-      sub: "Acil iş programı adayı",
+      glow: "rgba(245,158,11,0.15)",
+      sub: "Acil İş Programı Adayı",
       subColor: "text-amber-300",
+    },
+    {
+      title: "Bugünkü İmalat",
+      value: `${kpis.todayProductionMeters}m`,
+      icon: Activity,
+      border: "border-indigo-500/30",
+      iconBg: "bg-indigo-500/15",
+      iconColor: "text-indigo-400",
+      glow: "rgba(99,102,241,0.15)",
+      sub: "PE ve Servis Hatları",
+      subColor: "text-indigo-300",
     },
     {
       title: "Aktif Saha Ekipleri",
       value: `${kpis.activeTeams} / ${kpis.totalTeams}`,
       icon: Users,
-      accent: "from-emerald-500/20 to-emerald-600/5",
-      border: "border-emerald-500/25",
+      border: "border-emerald-500/30",
       iconBg: "bg-emerald-500/15",
       iconColor: "text-emerald-400",
-      glow: "rgba(16,185,129,0.2)",
+      glow: "rgba(16,185,129,0.15)",
       sub: kpis.totalTeams ? `%${Math.round((kpis.activeTeams / kpis.totalTeams) * 100)} ekip sahada` : 'Ekip hazır',
       subColor: "text-emerald-300",
-    },
-    {
-      title: "Bugünkü İmalat (m)",
-      value: `${kpis.todayProductionMeters}m`,
-      icon: Activity,
-      accent: "from-indigo-500/20 to-indigo-600/5",
-      border: "border-indigo-500/25",
-      iconBg: "bg-indigo-500/15",
-      iconColor: "text-indigo-400",
-      glow: "rgba(99,102,241,0.2)",
-      sub: "PE ve Servis Hatları",
-      subColor: "text-indigo-300",
-    },
-    {
-      title: "Atama / Durum Bekleyen",
-      value: kpis.unassignedBoxes,
-      icon: FileQuestion,
-      accent: "from-purple-500/20 to-purple-600/5",
-      border: "border-purple-500/25",
-      iconBg: "bg-purple-500/15",
-      iconColor: "text-purple-400",
-      glow: "rgba(168,85,247,0.2)",
-      sub: "Durumu girilmemiş kutu",
-      subColor: "text-purple-300",
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
       {cards.map((card, idx) => (
         <div
           key={idx}
-          className={`relative overflow-hidden rounded-2xl border ${card.border} bg-slate-800/60 backdrop-blur-sm p-4 flex flex-col justify-between group transition-all duration-300 hover:scale-[1.02] hover:bg-slate-800/80`}
-          style={{ boxShadow: `0 0 24px ${card.glow}` }}
+          className={`relative overflow-hidden rounded-2xl border ${card.border} bg-slate-900/60 backdrop-blur-md p-4 flex flex-col justify-between group transition-all duration-300 hover:scale-[1.01] hover:bg-slate-800/80`}
+          style={{ boxShadow: `0 4px 20px -2px ${card.glow}` }}
         >
           {/* Ambient corner glow */}
           <div
-            className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-2xl opacity-20 pointer-events-none"
+            className="absolute -top-8 -right-8 w-24 h-24 rounded-full blur-2xl opacity-25 pointer-events-none"
             style={{ background: card.glow }}
           />
 
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.12em] leading-tight">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider leading-tight">
               {card.title}
             </span>
-            <div className={`w-8 h-8 rounded-xl ${card.iconBg} flex items-center justify-center flex-shrink-0`}>
+            <div className={`w-8 h-8 rounded-xl ${card.iconBg} flex items-center justify-center flex-shrink-0 border border-slate-700/30`}>
               <card.icon className={`h-4 w-4 ${card.iconColor}`} />
             </div>
           </div>
 
           <div>
-            <div className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none">
+            <div className="text-2xl font-black text-white tracking-tight leading-none">
               {card.value}
             </div>
             {card.sub && (
-              <div className={`text-[11px] mt-2 font-medium ${card.subColor}`}>
+              <div className={`text-xs mt-2 font-medium ${card.subColor}`}>
                 {card.sub}
               </div>
             )}
