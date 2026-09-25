@@ -18,6 +18,7 @@ export interface WorkSession {
   teamId: string;
   teamName: string;
   sector: string;
+  district?: string;
   workType: WorkType;
   notificationType: "START" | "COMPLETED";
   startDate: string;

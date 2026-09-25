@@ -36,10 +36,25 @@ export default function ServiceBoxesPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [fileName, setFileName]     = useState<string>('');
   const [activeTab, setActiveTab]   = useState<'list' | 'chart'>('list');
-  const [listOpen, setListOpen]     = useState(false);
+  const [listOpen, setListOpen]     = useState(true);
 
-  /** Any filter interaction (including "Tümü") opens the list */
+  /** Any filter interaction updates state */
   const handleFiltersChange = (f: FilterState) => {
+    // If district is selected but not valid for newly selected statusFilter, reset district to 'all'
+    if (f.district !== 'all') {
+      const matchingForStatus = boxes.filter((box) => {
+        if (f.sector !== 'all' && box.sectorRegionInfo !== f.sector) return false;
+        if (!matchWaitingDayRange(box.waitingDays, f.waitingDayRange)) return false;
+        if (f.statusFilter === 'empty' && box.lastStatus !== '') return false;
+        if (f.statusFilter === 'filled' && box.lastStatus === '') return false;
+        if (!['all', 'empty', 'filled'].includes(f.statusFilter) && box.lastStatus !== f.statusFilter) return false;
+        return true;
+      });
+      const validDistricts = new Set(matchingForStatus.map((b) => b.district));
+      if (!validDistricts.has(f.district)) {
+        f.district = 'all';
+      }
+    }
     setFilters(f);
     setListOpen(true);
   };
@@ -71,31 +86,45 @@ export default function ServiceBoxesPage() {
     }
   };
 
-  const districts = useMemo(
-    () => [...new Set(boxes.map((b) => b.district))].filter(Boolean).sort(),
-    [boxes]
-  );
+  // Dynamic districts based on selected statusFilter (and sector/day range)
+  const districts = useMemo(() => {
+    const matchingBoxes = boxes.filter((b) => {
+      if (filters.sector !== 'all' && b.sectorRegionInfo !== filters.sector) return false;
+      if (!matchWaitingDayRange(b.waitingDays, filters.waitingDayRange)) return false;
+      if (filters.statusFilter === 'empty' && b.lastStatus !== '') return false;
+      if (filters.statusFilter === 'filled' && b.lastStatus === '') return false;
+      if (!['all', 'empty', 'filled'].includes(filters.statusFilter) && b.lastStatus !== filters.statusFilter) return false;
+      return true;
+    });
+    return [...new Set(matchingBoxes.map((b) => b.district))].filter(Boolean).sort();
+  }, [boxes, filters.sector, filters.waitingDayRange, filters.statusFilter]);
 
   const statusSummary = useMemo(() => {
     const base = boxes.filter((box) => {
       if (filters.sector !== 'all' && box.sectorRegionInfo !== filters.sector) return false;
-      if (filters.district !== 'all' && box.district !== filters.district) return false;
       if (!matchWaitingDayRange(box.waitingDays, filters.waitingDayRange)) return false;
       return true;
     });
     const total = base.length;
     const empty = base.filter((b) => !b.lastStatus).length;
     const filled = total - empty;
+
+    const statusBase = base.filter((b) => {
+      if (filters.statusFilter === 'empty') return !b.lastStatus;
+      if (filters.statusFilter === 'filled') return !!b.lastStatus;
+      if (!['all', 'empty', 'filled'].includes(filters.statusFilter)) return b.lastStatus === filters.statusFilter;
+      return true;
+    });
+
     const byDistrict: Record<string, { total: number; empty: number; filled: number }> = {};
-    boxes.forEach((box) => {
-      if (filters.sector !== 'all' && box.sectorRegionInfo !== filters.sector) return;
-      if (!matchWaitingDayRange(box.waitingDays, filters.waitingDayRange)) return;
+    base.forEach((box) => {
       if (!byDistrict[box.district]) byDistrict[box.district] = { total: 0, empty: 0, filled: 0 };
       byDistrict[box.district].total++;
       box.lastStatus ? byDistrict[box.district].filled++ : byDistrict[box.district].empty++;
     });
-    return { total, empty, filled, byDistrict };
-  }, [boxes, filters.sector, filters.district, filters.waitingDayRange]);
+
+    return { total, empty, filled, filteredByStatusTotal: statusBase.length, byDistrict };
+  }, [boxes, filters.sector, filters.waitingDayRange, filters.statusFilter]);
 
   const rangeCounts = useMemo(() => {
     const base = boxes.filter((box) => {

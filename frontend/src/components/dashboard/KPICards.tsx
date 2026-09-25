@@ -11,6 +11,7 @@ export interface ExtendedDashboardKPIs {
   totalTeams: number;
   todayProductionMeters: number;
   unassignedBoxes: number;
+  installedBoxCount?: number; // Montajı biten kutu sayısı
 }
 
 export function KPICards({ kpis }: { kpis: ExtendedDashboardKPIs }) {
@@ -23,8 +24,19 @@ export function KPICards({ kpis }: { kpis: ExtendedDashboardKPIs }) {
       iconBg: "bg-blue-500/15",
       iconColor: "text-blue-400",
       glow: "rgba(59,130,246,0.15)",
-      sub: `${kpis.completedBoxes} tamamlandı (${kpis.completionRate})`,
+      sub: `${kpis.completedBoxes} aktif montaj`,
       subColor: "text-blue-300",
+    },
+    {
+      title: "Montajı Biten Kutu",
+      value: `${kpis.installedBoxCount ?? kpis.completedBoxes} Adet`,
+      icon: CheckCircle2,
+      border: "border-emerald-500/30",
+      iconBg: "bg-emerald-500/15",
+      iconColor: "text-emerald-400",
+      glow: "rgba(16,185,129,0.2)",
+      sub: "Tamamlanan Kutu Montajı",
+      subColor: "text-emerald-300 font-bold",
     },
     {
       title: "Yasal Risk (90+ Gün)",
@@ -36,17 +48,6 @@ export function KPICards({ kpis }: { kpis: ExtendedDashboardKPIs }) {
       glow: "rgba(239,68,68,0.2)",
       sub: "EPDK Yasal Limit Aşımı",
       subColor: "text-red-300 font-semibold",
-    },
-    {
-      title: "Kritik Eşik (60–90 Gün)",
-      value: kpis.nearLimitBoxes,
-      icon: Clock,
-      border: "border-amber-500/30",
-      iconBg: "bg-amber-500/15",
-      iconColor: "text-amber-400",
-      glow: "rgba(245,158,11,0.15)",
-      sub: "Acil İş Programı Adayı",
-      subColor: "text-amber-300",
     },
     {
       title: "Bugünkü İmalat",
@@ -63,12 +64,12 @@ export function KPICards({ kpis }: { kpis: ExtendedDashboardKPIs }) {
       title: "Aktif Saha Ekipleri",
       value: `${kpis.activeTeams} / ${kpis.totalTeams}`,
       icon: Users,
-      border: "border-emerald-500/30",
-      iconBg: "bg-emerald-500/15",
-      iconColor: "text-emerald-400",
-      glow: "rgba(16,185,129,0.15)",
+      border: "border-violet-500/30",
+      iconBg: "bg-violet-500/15",
+      iconColor: "text-violet-400",
+      glow: "rgba(139,92,246,0.15)",
       sub: kpis.totalTeams ? `%${Math.round((kpis.activeTeams / kpis.totalTeams) * 100)} ekip sahada` : 'Ekip hazır',
-      subColor: "text-emerald-300",
+      subColor: "text-violet-300",
     },
   ];
 

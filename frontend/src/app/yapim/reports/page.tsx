@@ -1,4 +1,6 @@
 'use client';
+import { useEffect, useState } from 'react';
+import { workSessionService } from '@/lib/services/workSessionService';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area, Legend, Line,
@@ -65,6 +67,34 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 
 /* ─── Page ─────────────────────────────────────────────────────────────── */
 export default function ReportsPage() {
+  const [sessions, setSessions] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadSessions() {
+      const data = await workSessionService.getWorkSessions();
+      setSessions(data);
+    }
+    loadSessions();
+  }, []);
+
+  const completedBoxSessions = sessions.filter(
+    (s) => s.status === 'COMPLETED' && s.workType?.toLowerCase().includes('kutu')
+  );
+  const sessionBoxCount = completedBoxSessions.reduce((sum, s) => sum + (s.quantityMeters || 0), 0);
+  const totalCompletedBoxes = 65 + sessionBoxCount;
+
+  const s700Count = completedBoxSessions
+    .filter((s) => s.workType?.includes('S700'))
+    .reduce((sum, s) => sum + (s.quantityMeters || 0), 0) + 38;
+
+  const ces200Count = completedBoxSessions
+    .filter((s) => s.workType?.includes('CES200'))
+    .reduce((sum, s) => sum + (s.quantityMeters || 0), 0) + 27;
+
+  const boxTypeData = [
+    { name: 'S700 Kutu', value: s700Count },
+    { name: 'CES200 Kutu', value: ces200Count },
+  ];
 
   /* Data */
   const weeklyProductionData = [
@@ -101,20 +131,18 @@ export default function ReportsPage() {
   ];
 
   const trendData = [
-    { name: '1 Eyl', tamamlanan: 12, hedef: 20 },
-    { name: '8 Eyl', tamamlanan: 25, hedef: 20 },
-    { name: '15 Eyl', tamamlanan: 45, hedef: 40 },
-    { name: '22 Eyl', tamamlanan: 38, hedef: 40 },
-    { name: '29 Eyl', tamamlanan: 65, hedef: 50 },
+    { name: '1 Eyl', tamamlanan: 12, kutuMontaj: 8 },
+    { name: '8 Eyl', tamamlanan: 25, kutuMontaj: 15 },
+    { name: '15 Eyl', tamamlanan: 45, kutuMontaj: 28 },
+    { name: '22 Eyl', tamamlanan: 38, kutuMontaj: 22 },
+    { name: '29 Eyl', tamamlanan: 65, kutuMontaj: totalCompletedBoxes },
   ];
 
   /* Corporate color palette */
-  // Ekip performansı — navy→sky mavi gradyan
   const TEAM_COLORS = ['#1e3a8a', '#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd'];
-  // Bölge dağılımı — mavi, cyan, emerald, amber
   const PIE_COLORS = ['#1d4ed8', '#0891b2', '#059669', '#d97706'];
-  // İmalat türü — steel blue tonları
   const TYPE_COLORS = ['#1e3a8a', '#1e40af', '#1d4ed8', '#2563eb'];
+  const BOX_COLORS = ['#8b5cf6', '#ec4899'];
 
   const total = sectorData.reduce((a, b) => a + b.value, 0);
 
@@ -134,7 +162,7 @@ export default function ReportsPage() {
         <div className="flex items-center justify-between mb-2">
           <div>
             <h1 className="text-lg font-bold text-slate-100 tracking-tight">Raporlar ve Analizler</h1>
-            <p className="text-slate-400 text-xs mt-0.5">Saha üretim verileri ve ekip performans metrikleri</p>
+            <p className="text-slate-400 text-xs mt-0.5">Saha üretim verileri, servis kutusu montajları ve ekip performans metrikleri</p>
           </div>
           <div className="text-xs text-slate-400 bg-slate-800/60 border border-slate-700/50 rounded-xl px-3 py-1.5 font-medium">
             Eylül 2026
@@ -145,7 +173,7 @@ export default function ReportsPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <KpiCard label="Toplam Metraj" value="8.230 m" change="10% geçen haftaya göre" up />
           <KpiCard label="Aktif Ekip" value="6" change="10% artış" up />
-          <KpiCard label="Tamamlanan Kutu" value="65" change="8% geçen aya göre" up />
+          <KpiCard label="Montajı Biten Kutu" value={`${totalCompletedBoxes} Adet`} change="Canlı kutu montaj sync" up />
           <KpiCard label="Hedef Sapması" value="%16" change="Hedefin üzerinde" alert />
         </div>
 
@@ -290,19 +318,74 @@ export default function ReportsPage() {
                   <Bar dataKey="tamamlanan" name="Tamamlanan" fill="#2563eb" radius={[6, 6, 0, 0]} opacity={0.85} />
                   <Line
                     type="monotone"
-                    dataKey="hedef"
-                    stroke="#475569"
+                    dataKey="kutuMontaj"
+                    stroke="#8b5cf6"
                     strokeWidth={2}
-                    strokeDasharray="6 4"
                     dot={false}
-                    name="Hedef Seyri"
-                    legendType="none"
+                    name="Kutu Montajı (Adet)"
                   />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </ChartCard>
 
+        </div>
+
+        {/* Row 4 — Servis Kutusu Montaj İstatistik ve Grafik Dökümü */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <ChartCard title="Servis Kutusu Montaj Türü Dağılımı (S700 / CES200)">
+            <div className="flex items-center gap-4 h-[220px]">
+              <ResponsiveContainer width="55%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={boxTypeData}
+                    cx="50%" cy="50%"
+                    innerRadius={50} outerRadius={80}
+                    dataKey="value" stroke="none"
+                  >
+                    {boxTypeData.map((_, i) => (
+                      <Cell key={i} fill={BOX_COLORS[i % BOX_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<ChartTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex flex-col gap-3 flex-1">
+                {boxTypeData.map((entry, i) => (
+                  <div key={entry.name} className="bg-slate-800/50 p-2.5 rounded-xl border border-slate-700/40">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-slate-300 font-bold flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ background: BOX_COLORS[i] }} />
+                        {entry.name}
+                      </span>
+                      <span className="text-white font-extrabold">{entry.value} Kutu</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      Saha ekipleri tarafından montajı tamamlanan {entry.name} tipi servis kutusu
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </ChartCard>
+
+          <ChartCard title="Haftalık Servis Kutusu Montaj Trendi">
+            <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-purple-500 inline-block" /> Montaj Yapılan Kutu</span>
+              <span className="ml-auto text-emerald-400 font-semibold flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Toplam {totalCompletedBoxes} Kutu</span>
+            </div>
+            <div className="h-[220px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={trendData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridStroke} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={axisStyle} />
+                  <YAxis axisLine={false} tickLine={false} tick={axisStyle} />
+                  <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(139,92,246,0.1)' }} />
+                  <Bar dataKey="kutuMontaj" name="Kutu Montajı (Adet)" fill="#8b5cf6" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </ChartCard>
         </div>
       </div>
     </div>

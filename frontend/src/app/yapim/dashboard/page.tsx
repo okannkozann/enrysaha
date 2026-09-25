@@ -231,6 +231,11 @@ export default function DashboardPage() {
     };
   }).filter((d) => d.total > 0 || d.teamsCount > 0);
 
+  const boxInstallationsCount = workSessions
+    .filter((ws) => ws.status === 'COMPLETED' && ws.workType.toLowerCase().includes('kutu'))
+    .reduce((acc, ws) => acc + (ws.quantityMeters || 0), 0);
+  const totalInstalledBoxes = completedBoxes + boxInstallationsCount;
+
   const extendedKpis: ExtendedDashboardKPIs = {
     totalServiceBoxes: totalBoxes,
     completedBoxes,
@@ -241,6 +246,7 @@ export default function DashboardPage() {
     totalTeams: teams.length,
     todayProductionMeters: totalMeters,
     unassignedBoxes,
+    installedBoxCount: totalInstalledBoxes,
   };
 
   return (
@@ -536,8 +542,8 @@ export default function DashboardPage() {
                           <div className="text-base font-black text-white mt-0.5">{totalMeters} m Hat</div>
                         </div>
                         <div className="text-right">
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kutu Montajı</div>
-                          <div className="text-base font-black text-purple-300 mt-0.5">{completedBoxes} Adet</div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Montajı Biten Kutu</div>
+                          <div className="text-base font-black text-emerald-400 mt-0.5">{totalInstalledBoxes} Adet</div>
                         </div>
                       </div>
                     </div>

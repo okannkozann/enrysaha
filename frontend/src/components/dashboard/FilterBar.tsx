@@ -30,6 +30,7 @@ interface FilterBarProps {
     total: number;
     empty: number;
     filled: number;
+    filteredByStatusTotal?: number;
     byDistrict: Record<string, { total: number; empty: number; filled: number }>;
   };
   rangeCounts?: Record<string, number>;
@@ -193,18 +194,54 @@ export function FilterBar({
         ].join(' ')}
       >
         <div className="min-h-0">
-          <div className="mt-1 bg-slate-900/90 border border-slate-700/60 rounded-xl p-3 backdrop-blur-md shadow-xl space-y-2.5">
+          <div className="mt-1 bg-slate-900/90 border border-slate-700/60 rounded-xl p-3 backdrop-blur-md shadow-xl space-y-3">
 
-            {/* 1. İlçe Seçimi (Kompakt Flex Wrap) */}
+            {/* 1. Kutu Son Durumu (Üstte İlk Seçim) */}
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
+                <AlertCircle className="h-3 w-3 text-slate-400" />
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">1. Kutu Son Durumu</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {([
+                  { value: 'all',    label: 'Tümü',          count: statusSummary.total,  dot: 'bg-slate-400' },
+                  { value: 'empty',  label: 'Durumu Boş',    count: statusSummary.empty,  dot: 'bg-amber-400' },
+                  { value: 'filled', label: 'Durumu Diğer',  count: statusSummary.filled, dot: 'bg-blue-400'  },
+                ] as const).map(({ value, label, count, dot }) => (
+                  <FilterOption
+                    key={value}
+                    active={filters.statusFilter === value}
+                    onClick={() => update({ statusFilter: value as StatusFilter })}
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${dot}`} />
+                      <span className="truncate">{label}</span>
+                    </div>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold shrink-0 ${
+                      filters.statusFilter === value ? 'bg-blue-500/30 text-blue-200' : 'bg-slate-800 text-slate-400'
+                    }`}>
+                      {count}
+                    </span>
+                  </FilterOption>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. İlçe Seçimi (Kutu Son Durumuna Göre Filtreli) */}
+            <div className="pt-2 border-t border-slate-800">
+              <div className="flex items-center gap-1.5 mb-1.5">
                 <Building2 className="h-3 w-3 text-slate-400" />
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">İlçe Filtresi</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">2. İlçe Filtresi</span>
+                {filters.statusFilter !== 'all' && (
+                  <span className="text-[9px] font-semibold text-blue-400 bg-blue-500/10 px-1.5 py-0.2 rounded border border-blue-500/20 ml-1">
+                    Seçili duruma göre
+                  </span>
+                )}
               </div>
               <div className="flex flex-wrap gap-1.5">
                 <FilterOption
                   active={filters.district === 'all'}
-                  onClick={() => update({ district: 'all', statusFilter: 'all' })}
+                  onClick={() => update({ district: 'all' })}
                 >
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="h-1.5 w-1.5 rounded-full bg-slate-400 flex-shrink-0" />
@@ -213,18 +250,24 @@ export function FilterBar({
                   <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold shrink-0 ${
                     filters.district === 'all' ? 'bg-blue-500/30 text-blue-200' : 'bg-slate-800 text-slate-400'
                   }`}>
-                    {statusSummary.total}
+                    {statusSummary.filteredByStatusTotal ?? statusSummary.total}
                   </span>
                 </FilterOption>
 
                 {districts.map((d) => {
                   const info   = statusSummary.byDistrict[d];
                   const active = filters.district === d;
+                  const distCount = filters.statusFilter === 'empty'
+                    ? info?.empty
+                    : filters.statusFilter === 'filled'
+                      ? info?.filled
+                      : info?.total;
+
                   return (
                     <FilterOption
                       key={d}
                       active={active}
-                      onClick={() => update({ district: d, statusFilter: 'all' })}
+                      onClick={() => update({ district: d })}
                     >
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${active ? 'bg-blue-400' : 'bg-slate-500'}`} />
@@ -233,7 +276,7 @@ export function FilterBar({
                       <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold shrink-0 ${
                         active ? 'bg-blue-500/30 text-blue-200' : 'bg-slate-800 text-slate-400'
                       }`}>
-                        {info?.total ?? 0}
+                        {distCount ?? 0}
                       </span>
                     </FilterOption>
                   );
@@ -241,59 +284,25 @@ export function FilterBar({
               </div>
             </div>
 
-            {/* 2 & 3. Side-by-Side: Kutu Son Durumu & Kayıt Sıralaması */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-slate-800">
-              {/* Son Durum */}
-              <div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <AlertCircle className="h-3 w-3 text-slate-400" />
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kutu Son Durumu</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {([
-                    { value: 'all',    label: 'Tümü',          count: statusSummary.total,  dot: 'bg-slate-400' },
-                    { value: 'empty',  label: 'Durumu Boş',    count: statusSummary.empty,  dot: 'bg-amber-400' },
-                    { value: 'filled', label: 'Durumu Diğer',  count: statusSummary.filled, dot: 'bg-blue-400'  },
-                  ] as const).map(({ value, label, count, dot }) => (
-                    <FilterOption
-                      key={value}
-                      active={filters.statusFilter === value}
-                      onClick={() => update({ statusFilter: value as StatusFilter })}
-                    >
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${dot}`} />
-                        <span className="truncate">{label}</span>
-                      </div>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold shrink-0 ${
-                        filters.statusFilter === value ? 'bg-blue-500/30 text-blue-200' : 'bg-slate-800 text-slate-400'
-                      }`}>
-                        {count}
-                      </span>
-                    </FilterOption>
-                  ))}
-                </div>
+            {/* 3. Kayıt Sıralaması */}
+            <div className="pt-2 border-t border-slate-800">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <ArrowUpDown className="h-3 w-3 text-slate-400" />
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">3. Kayıt Sıralaması</span>
               </div>
-
-              {/* Sıralama */}
-              <div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <ArrowUpDown className="h-3 w-3 text-slate-400" />
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kayıt Sıralaması</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {([
-                    { value: 'waiting-desc', label: 'Büyükten Küçüğe ⬇' },
-                    { value: 'waiting-asc',  label: 'Küçükten Büyüğe ⬆' },
-                  ] as const).map(({ value, label }) => (
-                    <FilterOption
-                      key={value}
-                      active={filters.sortOption === value}
-                      onClick={() => update({ sortOption: value })}
-                    >
-                      <span>{label}</span>
-                    </FilterOption>
-                  ))}
-                </div>
+              <div className="flex flex-wrap gap-1.5">
+                {([
+                  { value: 'waiting-desc', label: 'Büyükten Küçüğe ⬇' },
+                  { value: 'waiting-asc',  label: 'Küçükten Büyüğe ⬆' },
+                ] as const).map(({ value, label }) => (
+                  <FilterOption
+                    key={value}
+                    active={filters.sortOption === value}
+                    onClick={() => update({ sortOption: value })}
+                  >
+                    <span>{label}</span>
+                  </FilterOption>
+                ))}
               </div>
             </div>
 
