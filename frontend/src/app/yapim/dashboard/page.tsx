@@ -73,13 +73,13 @@ function LinkAction({ href, label = 'Tümünü Gör' }: { href: string; label?: 
 
 /* ══ Main Page ════════════════════════════════════════════════════ */
 export default function DashboardPage() {
-  const [allBoxes, setAllBoxes]         = useState<ServiceBox[]>([]);
+  const [allBoxes, setAllBoxes] = useState<ServiceBox[]>([]);
   const [criticalBoxes, setCriticalBoxes] = useState<ServiceBox[]>([]);
-  const [teams, setTeams]               = useState<FieldTeam[]>([]);
-  const [reports, setReports]           = useState<FieldReport[]>([]);
+  const [teams, setTeams] = useState<FieldTeam[]>([]);
+  const [reports, setReports] = useState<FieldReport[]>([]);
   const [workSessions, setWorkSessions] = useState<WorkSession[]>([]);
-  const [qrPackages, setQrPackages]     = useState<QRPackage[]>([]);
-  const [loading, setLoading]           = useState(true);
+  const [qrPackages, setQrPackages] = useState<QRPackage[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Tab State
   const [activeTab, setActiveTab] = useState<'overview' | 'teams_reports'>('overview');
@@ -103,7 +103,7 @@ export default function DashboardPage() {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) boxes = parsed;
         }
-      } catch {}
+      } catch { }
 
       setAllBoxes(boxes);
       const sortedCritical = [...boxes]
@@ -127,41 +127,41 @@ export default function DashboardPage() {
   }, []);
 
   /* ── Calculations & Metrics ────────────────────────────────────── */
-  const totalBoxes        = allBoxes.length;
-  const completedBoxes    = allBoxes.filter((b) => b.lastStatus === 'Tamamlandı').length;
-  const overdueBoxes      = allBoxes.filter((b) => b.waitingDays >= 90 && b.lastStatus !== 'Tamamlandı').length;
-  const nearLimitBoxes    = allBoxes.filter((b) => b.waitingDays >= 60 && b.waitingDays < 90 && b.lastStatus !== 'Tamamlandı').length;
-  const unassignedBoxes   = allBoxes.filter((b) => !b.lastStatus || b.lastStatus === 'Bekliyor').length;
-  const activeTeamsCount  = teams.filter((t) => t.status === 'Aktif').length;
+  const totalBoxes = allBoxes.length;
+  const completedBoxes = allBoxes.filter((b) => b.lastStatus === 'Tamamlandı').length;
+  const overdueBoxes = allBoxes.filter((b) => b.waitingDays >= 90 && b.lastStatus !== 'Tamamlandı').length;
+  const nearLimitBoxes = allBoxes.filter((b) => b.waitingDays >= 60 && b.waitingDays < 90 && b.lastStatus !== 'Tamamlandı').length;
+  const unassignedBoxes = allBoxes.filter((b) => !b.lastStatus || b.lastStatus === 'Bekliyor').length;
+  const activeTeamsCount = teams.filter((t) => t.status === 'Aktif').length;
   const completionPercent = formatPercent(completedBoxes, totalBoxes);
 
-  const reportMeters  = reports.reduce((acc, r) => acc + (r.productionMeters || 0), 0);
+  const reportMeters = reports.reduce((acc, r) => acc + (r.productionMeters || 0), 0);
   const sessionMeters = workSessions.reduce((acc, ws) => acc + (ws.quantityMeters || 0), 0);
-  const totalMeters   = reportMeters + sessionMeters;
+  const totalMeters = reportMeters + sessionMeters;
 
   const peHatMeters = reports
     .filter((r) => r.workType === 'PE Ana Hat')
     .reduce((s, r) => s + (r.productionMeters || 0), 0) +
     workSessions
-    .filter((ws) => ws.workType === 'PE Ana Hat')
-    .reduce((s, ws) => s + (ws.quantityMeters || 0), 0);
+      .filter((ws) => ws.workType === 'PE Ana Hat')
+      .reduce((s, ws) => s + (ws.quantityMeters || 0), 0);
 
   const servisHattiMeters = reports
     .filter((r) => r.workType === 'Servis Hattı')
     .reduce((s, r) => s + (r.productionMeters || 0), 0) +
     workSessions
-    .filter((ws) => ws.workType === 'Servis Hattı')
-    .reduce((s, ws) => s + (ws.quantityMeters || 0), 0);
+      .filter((ws) => ws.workType === 'Servis Hattı')
+      .reduce((s, ws) => s + (ws.quantityMeters || 0), 0);
 
   const celikHatMeters = reports
     .filter((r) => r.workType === 'ST Çelik Hat')
     .reduce((s, r) => s + (r.productionMeters || 0), 0) +
     workSessions
-    .filter((ws) => ws.workType === 'ST Çelik Hat')
-    .reduce((s, ws) => s + (ws.quantityMeters || 0), 0);
+      .filter((ws) => ws.workType === 'ST Çelik Hat')
+      .reduce((s, ws) => s + (ws.quantityMeters || 0), 0);
 
   const averageWaiting = totalBoxes ? Math.round(allBoxes.reduce((s, b) => s + b.waitingDays, 0) / totalBoxes) : 0;
-  const maxWaitingBox  = [...allBoxes].sort((a, b) => b.waitingDays - a.waitingDays)[0];
+  const maxWaitingBox = [...allBoxes].sort((a, b) => b.waitingDays - a.waitingDays)[0];
 
   const slaBands = [
     {
@@ -200,11 +200,11 @@ export default function DashboardPage() {
 
   const districtList = ['Kepez', 'Muratpaşa', 'Konyaaltı', 'Döşemealtı', 'Aksu', 'Serik'];
   const districtMatrix = districtList.map((dist) => {
-    const distBoxes     = allBoxes.filter((b) => b.district?.toLowerCase().includes(dist.toLowerCase()));
-    const distOverdue   = distBoxes.filter((b) => b.waitingDays >= 90 && b.lastStatus !== 'Tamamlandı').length;
+    const distBoxes = allBoxes.filter((b) => b.district?.toLowerCase().includes(dist.toLowerCase()));
+    const distOverdue = distBoxes.filter((b) => b.waitingDays >= 90 && b.lastStatus !== 'Tamamlandı').length;
     const distCompleted = distBoxes.filter((b) => b.lastStatus === 'Tamamlandı').length;
-    const distTeams     = teams.filter((t) => t.district?.toLowerCase().includes(dist.toLowerCase()));
-    const distPercent   = distBoxes.length ? Math.round((distCompleted / distBoxes.length) * 100) : 0;
+    const distTeams = teams.filter((t) => t.district?.toLowerCase().includes(dist.toLowerCase()));
+    const distPercent = distBoxes.length ? Math.round((distCompleted / distBoxes.length) * 100) : 0;
 
     let riskLevel = 'Normal';
     let riskClass = 'text-slate-400 bg-slate-700/40 border-slate-600/30';
@@ -268,51 +268,7 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Quick Module Shortcut Buttons */}
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/yapim/excavation-permits"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all shadow-sm"
-            >
-              <FileCheck className="h-3.5 w-3.5 text-emerald-400" />
-              Büyükşehir Yetki Kontrolü →
-            </Link>
-            <Link
-              href="/yapim/map"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800/80 border border-slate-700/50 hover:bg-slate-700/80 hover:text-white transition-all shadow-sm"
-            >
-              <MapPin className="h-3.5 w-3.5 text-teal-400" />
-              Saha Haritası
-            </Link>
-            <Link
-              href="/yapim/qr"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800/80 border border-slate-700/50 hover:bg-slate-700/80 hover:text-white transition-all shadow-sm"
-            >
-              <QrCode className="h-3.5 w-3.5 text-purple-400" />
-              QR İş Emri ({qrPackages.length})
-            </Link>
-            <Link
-              href="/yapim/reports"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-blue-300 bg-blue-500/15 border border-blue-500/30 hover:bg-blue-500/25 transition-all shadow-sm"
-            >
-              <TrendingUp className="h-3.5 w-3.5 text-blue-400" />
-              Yatırım İzleme →
-            </Link>
-            <Link
-              href="/yapim/field-reports"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800/80 border border-slate-700/50 hover:bg-slate-700/80 hover:text-white transition-all shadow-sm"
-            >
-              <Zap className="h-3.5 w-3.5 text-amber-400" />
-              Saha Bildirimleri ({reports.length})
-            </Link>
-            <button
-              onClick={loadData}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-400 bg-slate-800/40 border border-slate-700/40 hover:bg-slate-700/50 hover:text-slate-200 transition-all"
-              title="Yenile"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin text-blue-400' : ''}`} />
-            </button>
-          </div>
+
         </div>
 
         {/* ══ 5-KPI STRIP ═════════════════════════════════════════════════ */}
@@ -330,22 +286,20 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'overview'
-                  ? 'bg-blue-600/20 border border-blue-500/40 text-blue-300 shadow-md shadow-blue-500/10'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'overview'
+                ? 'bg-blue-600/20 border border-blue-500/40 text-blue-300 shadow-md shadow-blue-500/10'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                }`}
             >
               <LayoutDashboard className="h-3.5 w-3.5" />
               Operasyonel Analiz & İlçe Matrisi
             </button>
             <button
               onClick={() => setActiveTab('teams_reports')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'teams_reports'
-                  ? 'bg-blue-600/20 border border-blue-500/40 text-blue-300 shadow-md shadow-blue-500/10'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'teams_reports'
+                ? 'bg-blue-600/20 border border-blue-500/40 text-blue-300 shadow-md shadow-blue-500/10'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                }`}
             >
               <Radio className="h-3.5 w-3.5" />
               Saha Akışı & Ekipler ({teams.length} Ekip, {reports.length} Rapor)
@@ -446,21 +400,19 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setAnalysisSubTab('sla')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                        analysisSubTab === 'sla'
-                          ? 'bg-blue-600/30 border border-blue-500/40 text-blue-300'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${analysisSubTab === 'sla'
+                        ? 'bg-blue-600/30 border border-blue-500/40 text-blue-300'
+                        : 'text-slate-400 hover:text-slate-200'
+                        }`}
                     >
                       EPDK Yasal SLA Yaşlandırması
                     </button>
                     <button
                       onClick={() => setAnalysisSubTab('meters')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                        analysisSubTab === 'meters'
-                          ? 'bg-blue-600/30 border border-blue-500/40 text-blue-300'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${analysisSubTab === 'meters'
+                        ? 'bg-blue-600/30 border border-blue-500/40 text-blue-300'
+                        : 'text-slate-400 hover:text-slate-200'
+                        }`}
                     >
                       İmalat Türleri & Metraj Dökümü
                     </button>
@@ -617,42 +569,7 @@ export default function DashboardPage() {
                 </div>
               </GlassCard>
 
-              {/* SLA & Performance Executive Card */}
-              <GlassCard className="p-4 bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-slate-900/90">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    SLA & Portföy Özeti
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold text-blue-300">
-                    EPDK Uyumlu
-                  </span>
-                </div>
 
-                <div className="space-y-3">
-                  <div className="p-3 rounded-xl bg-slate-950/40 border border-slate-800 flex items-center justify-between">
-                    <div>
-                      <div className="text-[10px] font-semibold text-slate-400">En Uzun Bekleyen Abone</div>
-                      <div className="text-xs font-bold text-slate-200 mt-0.5 truncate max-w-[170px]">
-                        {maxWaitingBox?.name || maxWaitingBox?.connectionObject || '—'}
-                      </div>
-                    </div>
-                    <span className="px-2 py-1 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 font-black text-xs">
-                      {maxWaitingBox ? `${maxWaitingBox.waitingDays} Gün` : '—'}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-center text-xs">
-                    <div className="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800">
-                      <div className="text-[10px] font-semibold text-slate-400">Genel Tamamlanma</div>
-                      <div className="text-base font-black text-emerald-400 mt-0.5">{completionPercent}</div>
-                    </div>
-                    <div className="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800">
-                      <div className="text-[10px] font-semibold text-slate-400">Ortalama Bekleme</div>
-                      <div className="text-base font-black text-blue-400 mt-0.5">{averageWaiting} Gün</div>
-                    </div>
-                  </div>
-                </div>
-              </GlassCard>
 
             </div>
 
@@ -687,11 +604,10 @@ export default function DashboardPage() {
                     {/* Time pill */}
                     <div className="flex-shrink-0 text-center min-w-[50px]">
                       <div className="text-xs font-bold text-slate-200">{report.time}</div>
-                      <div className={`mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
-                        report.reportType === 'MORNING'
-                          ? 'bg-blue-500/15 text-blue-300 border border-blue-500/25'
-                          : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25'
-                      }`}>
+                      <div className={`mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${report.reportType === 'MORNING'
+                        ? 'bg-blue-500/15 text-blue-300 border border-blue-500/25'
+                        : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25'
+                        }`}>
                         {report.reportType === 'MORNING' ? 'Başlama' : 'Bitiş'}
                       </div>
                     </div>
