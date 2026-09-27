@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 /* ── Reusable Glass Card ─────────────────────────────────────────── */
 function GlassCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-slate-700/40 bg-slate-800/50 backdrop-blur-sm overflow-hidden ${className}`}>
+    <div className={`rounded-xl border border-slate-700/40 bg-slate-800/50 backdrop-blur-sm overflow-hidden ${className}`}>
       {children}
     </div>
   );
@@ -42,17 +42,17 @@ function CardHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700/30">
-      <div className="flex items-center gap-2.5 min-w-0">
+    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/40">
+      <div className="flex items-center gap-2 min-w-0">
         <div className={`p-1.5 rounded-lg ${iconBg} shrink-0`}>
-          <Icon className={`h-4 w-4 ${iconColor}`} />
+          <Icon className={`h-3.5 w-3.5 ${iconColor}`} />
         </div>
         <div className="min-w-0">
-          <span className="text-sm font-semibold text-slate-100 truncate block">{title}</span>
-          {subtitle && <p className="text-[11px] text-slate-400 mt-0.5 truncate">{subtitle}</p>}
+          <span className="text-xs sm:text-sm font-bold text-slate-100 truncate block">{title}</span>
+          {subtitle && <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 truncate">{subtitle}</p>}
         </div>
       </div>
-      {action && <div className="shrink-0 ml-3">{action}</div>}
+      {action && <div className="shrink-0 ml-2">{action}</div>}
     </div>
   );
 }
@@ -260,10 +260,10 @@ export default function QRManagementPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100">
-      <div className="mx-auto max-w-[1600px] space-y-6 p-4 sm:p-7">
+      <div className="mx-auto max-w-[1600px] space-y-4 p-3.5 sm:p-5">
 
         {/* ══ 2. WORKFLOW STEPPER ══════════════════════════════════════ */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
           {[
             { step: '1', title: 'Filtreleri Belirle', desc: 'Durum, ilçe ve SLA seçimi', active: true, done: selectedDistricts.length > 0 || lastStatus !== null || isOver90Days },
             { step: '2', title: 'Listeyi İncele', desc: `${filteredList.length} kayıt seçildi`, active: filteredList.length > 0, done: filteredList.length > 0 },
@@ -272,23 +272,23 @@ export default function QRManagementPage() {
           ].map(({ step, title, desc, active, done }) => (
             <div
               key={step}
-              className={`p-3.5 rounded-xl border backdrop-blur-sm transition-all ${
+              className={`p-2.5 sm:p-3 rounded-xl border backdrop-blur-sm transition-all ${
                 done
-                  ? 'border-blue-500/40 bg-blue-500/10 shadow-[0_0_15px_rgba(59,130,246,0.15)]'
+                  ? 'border-blue-500/40 bg-blue-500/10 shadow-[0_0_12px_rgba(59,130,246,0.15)]'
                   : active
                   ? 'border-slate-600/50 bg-slate-800/60'
                   : 'border-slate-800 bg-slate-900/40 opacity-70'
               }`}
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2">
                 <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
                     done
                       ? 'bg-blue-500 text-white shadow-sm'
                       : 'bg-slate-700 text-slate-300'
                   }`}
                 >
-                  {done ? <Check className="h-3.5 w-3.5" /> : step}
+                  {done ? <Check className="h-3 w-3" /> : step}
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-white truncate">{title}</div>
@@ -300,19 +300,19 @@ export default function QRManagementPage() {
         </div>
 
         {/* ══ 3. MAIN WORKFLOW: FILTERS (2 COLS) + QR PREVIEW (1 COL) ═ */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-5">
 
           {/* Sol Kolon - Filtreler ve Önizleme (2 Kolon) */}
-          <div className="xl:col-span-2 space-y-6">
+          <div className="xl:col-span-2 space-y-4">
 
             {/* Filtre Başlığı & Temizleme */}
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <h2 className="text-base font-bold text-white flex items-center gap-2">
                   <Filter className="h-4 w-4 text-blue-400" />
                   İş Emri Filtreleme Kriterleri
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-[11px] text-slate-400 mt-0.5">
                   Sahaya gönderilecek servis kutularını seçin
                 </p>
               </div>
@@ -321,7 +321,7 @@ export default function QRManagementPage() {
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/25 hover:bg-rose-500/20 active:scale-95 transition-all"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/25 hover:bg-rose-500/20 active:scale-95 transition-all"
                 >
                   <X className="h-3.5 w-3.5" />
                   Filtreleri Sıfırla
@@ -338,34 +338,34 @@ export default function QRManagementPage() {
                 title="1. Son Durum Seçimi"
                 subtitle="Servis kutusunun sistemdeki son durum kaydına göre süzme"
               />
-              <div className="p-4 sm:p-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="p-3 sm:p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setLastStatus(lastStatus === "EMPTY" ? null : "EMPTY")}
-                    className={`p-4 sm:p-5 rounded-xl border text-left transition-all relative overflow-hidden group ${
+                    className={`p-3 sm:p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group ${
                       lastStatus === "EMPTY"
-                        ? 'border-blue-500/60 bg-blue-500/15 shadow-[0_0_20px_rgba(59,130,246,0.2)] text-white'
+                        ? 'border-blue-500/60 bg-blue-500/15 shadow-[0_0_15px_rgba(59,130,246,0.2)] text-white'
                         : 'border-slate-700/50 bg-slate-900/50 text-slate-300 hover:border-slate-600 hover:bg-slate-800/60'
                     }`}
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1.5">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-0.5 flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-amber-400" />
                           Durumu Boş Olanlar
                         </div>
-                        <div className="text-2xl font-black text-white">{emptyBoxesCount}</div>
+                        <div className="text-xl font-extrabold text-white">{emptyBoxesCount}</div>
                       </div>
                       {lastStatus === "EMPTY" ? (
-                        <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-sm">
-                          <Check className="h-3.5 w-3.5" />
+                        <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-sm">
+                          <Check className="h-3 w-3" />
                         </div>
                       ) : (
-                        <div className="w-6 h-6 rounded-full border border-slate-700 flex items-center justify-center text-slate-500 group-hover:border-slate-500" />
+                        <div className="w-5 h-5 rounded-full border border-slate-700 flex items-center justify-center text-slate-500 group-hover:border-slate-500" />
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-2">
+                    <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1.5">
                       Son durum alanı boş olan, sahada montaj / durum girişi bekleyen kutular.
                     </p>
                   </button>
@@ -373,29 +373,29 @@ export default function QRManagementPage() {
                   <button
                     type="button"
                     onClick={() => setLastStatus(lastStatus === "OTHER" ? null : "OTHER")}
-                    className={`p-4 sm:p-5 rounded-xl border text-left transition-all relative overflow-hidden group ${
+                    className={`p-3 sm:p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group ${
                       lastStatus === "OTHER"
-                        ? 'border-blue-500/60 bg-blue-500/15 shadow-[0_0_20px_rgba(59,130,246,0.2)] text-white'
+                        ? 'border-blue-500/60 bg-blue-500/15 shadow-[0_0_15px_rgba(59,130,246,0.2)] text-white'
                         : 'border-slate-700/50 bg-slate-900/50 text-slate-300 hover:border-slate-600 hover:bg-slate-800/60'
                     }`}
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1.5">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-0.5 flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-blue-400" />
                           Durumu Diğer Olanlar
                         </div>
-                        <div className="text-2xl font-black text-white">{otherBoxesCount}</div>
+                        <div className="text-xl font-extrabold text-white">{otherBoxesCount}</div>
                       </div>
                       {lastStatus === "OTHER" ? (
-                        <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-sm">
-                          <Check className="h-3.5 w-3.5" />
+                        <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-sm">
+                          <Check className="h-3 w-3" />
                         </div>
                       ) : (
-                        <div className="w-6 h-6 rounded-full border border-slate-700 flex items-center justify-center text-slate-500 group-hover:border-slate-500" />
+                        <div className="w-5 h-5 rounded-full border border-slate-700 flex items-center justify-center text-slate-500 group-hover:border-slate-500" />
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-2">
+                    <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1.5">
                       Son durum alanında önceden değer girilmiş, takipteki servis kutuları.
                     </p>
                   </button>
@@ -412,26 +412,26 @@ export default function QRManagementPage() {
                 title="2. İlçe Seçimi"
                 subtitle="İş emri paketine dahil edilecek ilçeleri belirleyin"
                 action={
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => setSelectedDistricts(allDistricts)}
-                      className="px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-300 bg-slate-700/50 border border-slate-600/40 hover:bg-slate-700 hover:text-white transition-colors"
+                      className="px-2 py-0.5 rounded text-[11px] font-semibold text-slate-300 bg-slate-700/50 border border-slate-600/40 hover:bg-slate-700 hover:text-white transition-colors"
                     >
                       Tümünü Seç
                     </button>
                     <button
                       type="button"
                       onClick={() => setSelectedDistricts([])}
-                      className="px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors"
+                      className="px-2 py-0.5 rounded text-[11px] font-semibold text-slate-400 hover:text-slate-200 transition-colors"
                     >
                       Temizle
                     </button>
                   </div>
                 }
               />
-              <div className="p-4 sm:p-5">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+              <div className="p-3 sm:p-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                   {allDistricts.map((dist) => {
                     const count      = districtCounts[dist] || 0;
                     const isSelected = selectedDistricts.includes(dist);
@@ -440,7 +440,7 @@ export default function QRManagementPage() {
                         key={dist}
                         type="button"
                         onClick={() => toggleDistrict(dist)}
-                        className={`px-3.5 py-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between gap-2 transition-all ${
+                        className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold flex items-center justify-between gap-1.5 transition-all ${
                           isSelected
                             ? 'bg-blue-600/25 border-blue-500/50 text-white shadow-sm shadow-blue-500/20'
                             : 'bg-slate-900/60 text-slate-300 border-slate-700/40 hover:bg-slate-800/80 hover:border-slate-600'
@@ -452,10 +452,10 @@ export default function QRManagementPage() {
                               isSelected ? 'bg-blue-400 shadow-[0_0_6px_rgba(96,165,250,0.8)]' : 'bg-slate-500'
                             }`}
                           />
-                          <span className="truncate">{dist}</span>
+                          <span className="truncate text-[11px]">{dist}</span>
                         </div>
                         <span
-                          className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold shrink-0 ${
+                          className={`text-[9.5px] px-1.5 py-0.2 rounded font-bold shrink-0 ${
                             isSelected
                               ? 'bg-blue-500/30 text-blue-200 border border-blue-500/30'
                               : 'bg-slate-800 text-slate-400'
@@ -471,7 +471,7 @@ export default function QRManagementPage() {
             </GlassCard>
 
             {/* ── 3 & 4. Bekleme Süresi & Sıralama (Yan Yana) ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
               {/* Bekleme Süresi */}
               <GlassCard>
@@ -482,11 +482,11 @@ export default function QRManagementPage() {
                   title="3. Yasal SLA Sınırı"
                   subtitle="Mevzuat bekleme süresi aşımı"
                 />
-                <div className="p-4 sm:p-5">
+                <div className="p-3 sm:p-4">
                   <button
                     type="button"
                     onClick={() => setIsOver90Days(!isOver90Days)}
-                    className={`w-full p-3.5 rounded-xl border text-xs font-bold flex items-center justify-between gap-2 transition-all ${
+                    className={`w-full p-2.5 rounded-lg border text-xs font-bold flex items-center justify-between gap-2 transition-all ${
                       isOver90Days
                         ? 'bg-rose-500/20 border-rose-500/50 text-rose-200 shadow-md shadow-rose-500/10'
                         : 'bg-slate-900/60 border-slate-700/40 text-slate-300 hover:bg-slate-800/80'
@@ -497,14 +497,14 @@ export default function QRManagementPage() {
                       <span>&gt; 90 Gün (Yasal Limit Aşımı)</span>
                     </div>
                     {isOver90Days ? (
-                      <span className="w-5 h-5 rounded-full bg-rose-500 flex items-center justify-center text-white">
-                        <Check className="h-3 w-3" />
+                      <span className="w-4 h-4 rounded-full bg-rose-500 flex items-center justify-center text-white">
+                        <Check className="h-2.5 w-2.5" />
                       </span>
                     ) : (
-                      <span className="w-5 h-5 rounded-full border border-slate-700" />
+                      <span className="w-4 h-4 rounded-full border border-slate-700" />
                     )}
                   </button>
-                  <p className="text-[11px] text-slate-500 mt-2">
+                  <p className="text-[10px] text-slate-500 mt-1.5">
                     Sadece 90 günü aşmış ve acil müdahale gerektiren aboneleri filtreler.
                   </p>
                 </div>
@@ -519,12 +519,12 @@ export default function QRManagementPage() {
                   title="4. Liste Sıralaması"
                   subtitle="Bekleme gününe göre önceliklendirme"
                 />
-                <div className="p-4 sm:p-5">
-                  <div className="flex bg-slate-900/80 p-1 rounded-xl border border-slate-700/50 gap-1">
+                <div className="p-3 sm:p-4">
+                  <div className="flex bg-slate-900/80 p-1 rounded-lg border border-slate-700/50 gap-1">
                     <button
                       type="button"
                       onClick={() => setSortOrder('DESC')}
-                      className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
+                      className={`flex-1 py-2 px-2.5 text-xs font-bold rounded transition-all ${
                         sortOrder === 'DESC'
                           ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'
                           : 'text-slate-400 hover:text-slate-200'
@@ -535,7 +535,7 @@ export default function QRManagementPage() {
                     <button
                       type="button"
                       onClick={() => setSortOrder('ASC')}
-                      className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
+                      className={`flex-1 py-2 px-2.5 text-xs font-bold rounded transition-all ${
                         sortOrder === 'ASC'
                           ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'
                           : 'text-slate-400 hover:text-slate-200'
@@ -544,7 +544,7 @@ export default function QRManagementPage() {
                       Küçükten Büyüğe (0 → 99)
                     </button>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-2">
+                  <p className="text-[10px] text-slate-500 mt-1.5">
                     En çok bekleyen kritik kutular listenin en üstünde yer alır.
                   </p>
                 </div>
@@ -553,25 +553,25 @@ export default function QRManagementPage() {
 
             {/* ── 5. Filtre Sonucu & Önizleme Listesi ── */}
             <GlassCard>
-              <div className="px-5 py-4 border-b border-slate-700/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="px-4 py-3 border-b border-slate-700/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-white">İş Emri Önizleme</span>
-                    <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-black">
+                    <span className="text-xs sm:text-sm font-bold text-white">İş Emri Önizleme</span>
+                    <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[11px] font-bold">
                       {filteredList.length} Kutu
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 mt-1.5">
-                    <span className="px-2 py-0.5 rounded bg-slate-700/50 border border-slate-600/40 text-[10px] text-slate-300 font-medium">
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    <span className="px-1.5 py-0.5 rounded bg-slate-700/50 border border-slate-600/40 text-[10px] text-slate-300 font-medium">
                       Durum: {lastStatus === "EMPTY" ? "Boş" : lastStatus === "OTHER" ? "Diğer" : "Tümü"}
                     </span>
                     {selectedDistricts.length > 0 && (
-                      <span className="px-2 py-0.5 rounded bg-slate-700/50 border border-slate-600/40 text-[10px] text-slate-300 font-medium">
+                      <span className="px-1.5 py-0.5 rounded bg-slate-700/50 border border-slate-600/40 text-[10px] text-slate-300 font-medium">
                         İlçe: {selectedDistricts.join(', ')}
                       </span>
                     )}
                     {isOver90Days && (
-                      <span className="px-2 py-0.5 rounded bg-red-500/20 border border-red-500/30 text-[10px] text-red-300 font-bold">
+                      <span className="px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/30 text-[10px] text-red-300 font-bold">
                         &gt; 90 Gün
                       </span>
                     )}
@@ -584,12 +584,12 @@ export default function QRManagementPage() {
                     type="button"
                     onClick={handleGeneratePDF}
                     disabled={generatingPDF || filteredList.length === 0}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-300 bg-rose-500/15 border border-rose-500/30 hover:bg-rose-500/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-300 bg-rose-500/15 border border-rose-500/30 hover:bg-rose-500/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                   >
                     {generatingPDF ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <FileText className="h-4 w-4 text-rose-400" />
+                      <FileText className="h-3.5 w-3.5 text-rose-400" />
                     )}
                     PDF İndir
                   </button>
@@ -598,12 +598,12 @@ export default function QRManagementPage() {
                     type="button"
                     onClick={handleGenerateQR}
                     disabled={generatingQR || filteredList.length === 0}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-md shadow-blue-500/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-md shadow-blue-500/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                   >
                     {generatingQR ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <QrCode className="h-4 w-4" />
+                      <QrCode className="h-3.5 w-3.5" />
                     )}
                     QR Kod Oluştur
                   </button>
@@ -611,23 +611,23 @@ export default function QRManagementPage() {
               </div>
 
               {/* Masaüstü Tablo (hidden sm:block) */}
-              <div className="hidden sm:block overflow-x-auto max-h-[460px] overflow-y-auto">
+              <div className="hidden sm:block overflow-x-auto max-h-[360px] overflow-y-auto">
                 <table className="w-full text-xs text-left border-collapse">
                   <thead className="bg-slate-900/90 border-b border-slate-700/50 text-[10px] font-bold text-slate-400 uppercase tracking-wider sticky top-0 backdrop-blur-sm z-10">
                     <tr>
-                      <th className="px-4 py-3">Bağlantı Nesnesi</th>
-                      <th className="px-4 py-3">Adres</th>
-                      <th className="px-4 py-3">İlçe / Mahalle</th>
-                      <th className="px-4 py-3 text-center">Bekleme</th>
-                      <th className="px-4 py-3 text-center">Son Durum</th>
-                      <th className="px-4 py-3">Abone Adı</th>
-                      <th className="px-4 py-3">Sektör</th>
+                      <th className="px-3.5 py-2">Bağlantı Nesnesi</th>
+                      <th className="px-3.5 py-2">Adres</th>
+                      <th className="px-3.5 py-2">İlçe / Mahalle</th>
+                      <th className="px-3.5 py-2 text-center">Bekleme</th>
+                      <th className="px-3.5 py-2 text-center">Son Durum</th>
+                      <th className="px-3.5 py-2">Abone Adı</th>
+                      <th className="px-3.5 py-2">Sektör</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/25">
                     {filteredList.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="text-center py-16 text-slate-500 text-sm">
+                        <td colSpan={7} className="text-center py-12 text-slate-500 text-xs">
                           Filtrelere uygun servis kutusu bulunamadı.
                         </td>
                       </tr>
@@ -639,18 +639,18 @@ export default function QRManagementPage() {
                             idx % 2 === 0 ? '' : 'bg-slate-800/20'
                           }`}
                         >
-                          <td className="px-4 py-3 font-bold text-slate-100 whitespace-nowrap">
+                          <td className="px-3.5 py-2 font-bold text-slate-100 whitespace-nowrap">
                             {box.connectionObject}
                           </td>
-                          <td className="px-4 py-3 text-slate-400 truncate max-w-[200px]" title={box.address}>
+                          <td className="px-3.5 py-2 text-slate-400 truncate max-w-[180px]" title={box.address}>
                             {box.address || '—'}
                           </td>
-                          <td className="px-4 py-3 text-slate-300 whitespace-nowrap">
-                            {box.district} <span className="text-slate-500 text-[11px]">/ {box.neighborhood}</span>
+                          <td className="px-3.5 py-2 text-slate-300 whitespace-nowrap">
+                            {box.district} <span className="text-slate-500 text-[10.5px]">/ {box.neighborhood}</span>
                           </td>
-                          <td className="px-4 py-3 text-center whitespace-nowrap">
+                          <td className="px-3.5 py-2 text-center whitespace-nowrap">
                             <span
-                              className={`inline-flex px-2 py-0.5 rounded text-[11px] font-bold border ${
+                              className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold border ${
                                 box.waitingDays >= 90
                                   ? 'bg-red-500/20 text-red-300 border-red-500/30'
                                   : box.waitingDays >= 60
@@ -661,9 +661,9 @@ export default function QRManagementPage() {
                               {box.waitingDays} Gün
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-center whitespace-nowrap">
+                          <td className="px-3.5 py-2 text-center whitespace-nowrap">
                             <span
-                              className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${
                                 !box.lastStatus
                                   ? 'bg-amber-500/15 text-amber-300 border-amber-500/25'
                                   : 'bg-blue-500/15 text-blue-300 border-blue-500/25'
@@ -672,10 +672,10 @@ export default function QRManagementPage() {
                               {box.lastStatus || 'Boş'}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-slate-300 truncate max-w-[140px]">
+                          <td className="px-3.5 py-2 text-slate-300 truncate max-w-[120px]">
                             {box.name || '—'}
                           </td>
-                          <td className="px-4 py-3 text-slate-400 whitespace-nowrap text-[11px]">
+                          <td className="px-3.5 py-2 text-slate-400 whitespace-nowrap text-[10.5px]">
                             {box.sectorInfo || box.sectorRegionInfo || '—'}
                           </td>
                         </tr>
@@ -686,19 +686,19 @@ export default function QRManagementPage() {
               </div>
 
               {/* Mobilde Kart Görünümü (block sm:hidden) */}
-              <div className="block sm:hidden divide-y divide-slate-800 max-h-[460px] overflow-y-auto">
+              <div className="block sm:hidden divide-y divide-slate-800 max-h-[360px] overflow-y-auto">
                 {filteredList.length === 0 ? (
-                  <div className="p-8 text-center text-slate-500 text-sm">
+                  <div className="p-6 text-center text-slate-500 text-xs">
                     Filtrelere uygun servis kutusu bulunamadı.
                   </div>
                 ) : (
                   filteredList.map((box) => (
-                    <div key={box.id} className="p-3.5 space-y-2 hover:bg-slate-800/30 transition-colors">
+                    <div key={box.id} className="p-3 space-y-1.5 hover:bg-slate-800/30 transition-colors">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-white text-xs">{box.connectionObject}</span>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                            className={`px-1.5 py-0.5 rounded text-[9.5px] font-bold border ${
                               box.waitingDays >= 90
                                 ? 'bg-red-500/20 text-red-300 border-red-500/30'
                                 : 'bg-slate-700/60 text-slate-300 border-slate-600/30'
@@ -706,18 +706,18 @@ export default function QRManagementPage() {
                           >
                             {box.waitingDays} Gün
                           </span>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/15 text-blue-300 border border-blue-500/25">
+                          <span className="px-1.5 py-0.5 rounded text-[9.5px] font-semibold bg-blue-500/15 text-blue-300 border border-blue-500/25">
                             {box.lastStatus || 'Boş'}
                           </span>
                         </div>
                       </div>
 
-                      <div className="text-[11px] text-slate-400 leading-snug">
+                      <div className="text-[10.5px] text-slate-400 leading-snug">
                         {box.district} / {box.neighborhood} — {box.address}
                       </div>
 
                       {box.name && (
-                        <div className="text-[11px] text-slate-300 font-medium flex items-center gap-1">
+                        <div className="text-[10.5px] text-slate-300 font-medium flex items-center gap-1">
                           <User className="h-3 w-3 text-slate-500" />
                           <span>{box.name}</span>
                         </div>
@@ -742,44 +742,44 @@ export default function QRManagementPage() {
                   subtitle={generatedQR.id}
                 />
 
-                <div className="p-6 flex flex-col items-center">
+                <div className="p-4 sm:p-5 flex flex-col items-center">
                   {/* QR Box with Glowing Cyber Frame */}
-                  <div className="relative p-4 rounded-2xl bg-white shadow-2xl shadow-blue-500/15 mb-6">
+                  <div className="relative p-3 rounded-xl bg-white shadow-xl shadow-blue-500/15 mb-4">
                     <QRCodeSVG
                       value={`/saha/qr-listesi/${generatedQR.id}`}
-                      size={210}
+                      size={160}
                       level="H"
                       includeMargin={false}
                     />
                     {/* Cyber corner accents */}
-                    <div className="absolute top-0 left-0 w-3.5 h-3.5 border-t-2 border-l-2 border-blue-600 rounded-tl -translate-x-1 -translate-y-1" />
-                    <div className="absolute top-0 right-0 w-3.5 h-3.5 border-t-2 border-r-2 border-blue-600 rounded-tr translate-x-1 -translate-y-1" />
-                    <div className="absolute bottom-0 left-0 w-3.5 h-3.5 border-b-2 border-l-2 border-blue-600 rounded-bl -translate-x-1 translate-y-1" />
-                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 border-b-2 border-r-2 border-blue-600 rounded-br translate-x-1 translate-y-1" />
+                    <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-blue-600 rounded-tl -translate-x-1 -translate-y-1" />
+                    <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-blue-600 rounded-tr translate-x-1 -translate-y-1" />
+                    <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-blue-600 rounded-bl -translate-x-1 translate-y-1" />
+                    <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-blue-600 rounded-br translate-x-1 translate-y-1" />
                   </div>
 
                   {/* Summary Details */}
-                  <div className="w-full rounded-xl bg-slate-900/80 border border-slate-700/50 p-4 space-y-2.5 text-xs">
-                    <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                  <div className="w-full rounded-xl bg-slate-900/80 border border-slate-700/50 p-3 space-y-2 text-xs">
+                    <div className="flex justify-between items-center pb-1.5 border-b border-slate-800">
                       <span className="text-slate-400">Atanan Kutu:</span>
                       <span className="font-bold text-white">{generatedQR.serviceBoxIds.length} Servis Kutusu</span>
                     </div>
 
-                    <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                    <div className="flex justify-between items-center pb-1.5 border-b border-slate-800">
                       <span className="text-slate-400">İlçeler:</span>
-                      <span className="font-bold text-slate-200 text-right truncate max-w-[160px]">
+                      <span className="font-bold text-slate-200 text-right truncate max-w-[140px]">
                         {generatedQR.filters.districts.length > 0 ? generatedQR.filters.districts.join(', ') : 'Tümü'}
                       </span>
                     </div>
 
                     {(generatedQR.filters as any).over90Days && (
-                      <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                      <div className="flex justify-between items-center pb-1.5 border-b border-slate-800">
                         <span className="text-slate-400">Bekleme Sınırı:</span>
                         <span className="font-bold text-red-400">&gt; 90 Gün (Acil)</span>
                       </div>
                     )}
 
-                    <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                    <div className="flex justify-between items-center pb-1.5 border-b border-slate-800">
                       <span className="text-slate-400">Son Durum:</span>
                       <span className="font-bold text-slate-200">
                         {generatedQR.filters.lastStatus === 'EMPTY' ? 'Boş' : generatedQR.filters.lastStatus === 'OTHER' ? 'Diğer' : 'Tümü'}
@@ -798,21 +798,21 @@ export default function QRManagementPage() {
                   <button
                     type="button"
                     onClick={() => setSendDialogOpen(true)}
-                    className="w-full mt-5 py-3.5 rounded-xl font-black text-sm text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 active:scale-98 transition-all"
+                    className="w-full mt-4 py-2.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:to-indigo-500 shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 active:scale-98 transition-all"
                   >
-                    <Send className="h-4 w-4" />
+                    <Send className="h-3.5 w-3.5" />
                     SAHA EKİBİNE GÖNDER
                   </button>
                 </div>
               </GlassCard>
             ) : (
-              <GlassCard className="sticky top-20 border-dashed border-2 border-slate-700/60 bg-slate-900/30 p-8 flex flex-col items-center justify-center text-center h-[520px]">
-                <div className="w-16 h-16 rounded-2xl bg-slate-800/80 border border-slate-700/50 flex items-center justify-center mb-4">
-                  <QrCode className="h-8 w-8 text-slate-500" />
+              <GlassCard className="sticky top-20 border-dashed border-2 border-slate-700/60 bg-slate-900/30 p-6 flex flex-col items-center justify-center text-center h-[380px]">
+                <div className="w-12 h-12 rounded-xl bg-slate-800/80 border border-slate-700/50 flex items-center justify-center mb-3">
+                  <QrCode className="h-6 w-6 text-slate-500" />
                 </div>
-                <h3 className="text-base font-bold text-slate-200 mb-2">QR Henüz Oluşturulmadı</h3>
-                <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
-                  Soldaki panelden filtre kriterlerini belirleyip <strong className="text-slate-300">"QR Kod Oluştur"</strong> butonuna bastığınızda, saha ekiplerinin anında okutabileceği dijital iş paketi burada belirecektir.
+                <h3 className="text-sm font-bold text-slate-200 mb-1.5">QR Henüz Oluşturulmadı</h3>
+                <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed">
+                  Soldaki panelden filtre kriterlerini belirleyip <strong className="text-slate-300">"QR Kod Oluştur"</strong> butonuna bastığınızda, saha ekiplerinin okutabileceği dijital iş paketi burada belirecektir.
                 </p>
               </GlassCard>
             )}
