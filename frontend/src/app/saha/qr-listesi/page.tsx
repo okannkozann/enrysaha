@@ -1,203 +1,195 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { qrService } from '@/lib/services/qrService';
 import { authService } from '@/lib/services/authService';
 import { QRPackage, User } from '@/types';
 import {
-  LogOut, ClipboardList, PackageSearch, QrCode,
-  Calendar, MapPin, ChevronRight, HardHat, RefreshCw,
-  Sparkles, ArrowRight, Layers
+  PackageSearch, QrCode, Calendar, MapPin, ChevronRight,
+  RefreshCw, Sparkles, ArrowRight, Layers, CheckCircle2,
+  Clock, AlertCircle, Building2, Eye
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 export default function MobileQRListPage() {
-  const router = useRouter();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [qrPackages, setQrPackages]   = useState<QRPackage[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const [qrPackages, setQrPackages] = useState<QRPackage[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    authService.getCurrentFieldUser().then((user) => {
-      setCurrentUser(user);
-      loadQRs(user.teamId!);
-    });
+    loadData();
   }, []);
 
-  const loadQRs = async (teamId: string) => {
-    const all = await qrService.getQrPackages();
-    const assigned = all.filter(
-      (qr) => qr.assignedTeamId === teamId && (qr.status === 'SENT' || qr.status === 'VIEWED')
-    );
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const user = await authService.getCurrentFieldUser();
+      setCurrentUser(user);
 
-    if (assigned.length > 0) {
+      const all = await qrService.getQrPackages();
+      let assigned = all.filter(
+        (qr) => qr.status === 'SENT' || qr.status === 'VIEWED'
+      );
+
+      if (user?.teamId) {
+        assigned = assigned.filter((qr) => qr.assignedTeamId === user.teamId);
+      }
+
       assigned.sort(
         (a, b) => new Date(b.sentAt || b.createdAt).getTime() - new Date(a.sentAt || a.createdAt).getTime()
       );
-      // Auto-redirect to the most recent one
-      router.replace(`/saha/qr-listesi/${assigned[0].id}`);
-      return;
-    }
 
-    setQrPackages(assigned);
-    setLoading(false);
+      setQrPackages(assigned);
+    } catch (e) {
+      console.error('Error loading QR packages:', e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatDate = (iso: string) => {
+    if (!iso) return '-';
     const d = new Date(iso);
-    return d.toLocaleDateString('tr-TR') + ' ' + d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+      ' ' +
+      d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 pb-20 relative selection:bg-emerald-500/30 selection:text-white">
+  const totalBoxesCount = qrPackages.reduce((acc, curr) => acc + (curr.serviceBoxIds?.length || 0), 0);
+  const uniqueDistricts = Array.from(
+    new Set(qrPackages.flatMap((qr) => qr.filters?.districts || []))
+  );
 
-      {/* Ambient background glows */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-24 left-1/4 w-96 h-96 rounded-full bg-blue-600/10 blur-[120px]" />
-        <div className="absolute top-1/2 right-10 w-80 h-80 rounded-full bg-purple-600/10 blur-[120px]" />
+  return (
+    <div className="w-full space-y-5 py-2">
+
+      {/* ── Section Title & Action Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/80 backdrop-blur-xl border border-slate-800 p-4 sm:p-5 rounded-2xl shadow-xl">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/25 ring-1 ring-white/20 shrink-0">
+            <PackageSearch className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-black text-white tracking-wide">
+                SERVİS KUTUSU PAKET LİSTESİ
+              </h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-500/20 border border-blue-500/35 text-blue-300">
+                {qrPackages.length} Paket
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Ekibinize atanan tüm aktif servis kutusu iş listeleri
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={loadData}
+          disabled={loading}
+          className="self-start sm:self-auto flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/60 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-blue-400' : ''}`} />
+          <span>Yenile</span>
+        </button>
       </div>
 
-      {/* ── Top Bar: Sticky Header ── */}
-      <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-700/50 p-4 sm:p-5 sticky top-0 z-30 shadow-lg">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <PackageSearch className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-black text-white text-base tracking-tight">ENERYA SAHA</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/15 border border-blue-500/25 text-blue-300">
-                  {currentUser?.teamName || 'Ekip 01'}
-                </span>
-              </div>
-              <div className="text-xs text-slate-400 mt-0.5">Atanan Servis Kutusu Listeleri</div>
-            </div>
-          </div>
 
-          <Link
-            href="/"
-            title="Çıkış Yap"
-            className="flex items-center justify-center w-8 h-8 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-slate-700/60 transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-          </Link>
+
+
+      {/* ── Package List View ── */}
+      {loading ? (
+        <div className="p-12 text-center bg-slate-900/40 rounded-2xl border border-slate-800 backdrop-blur-xl flex flex-col items-center justify-center gap-3">
+          <RefreshCw className="h-8 w-8 animate-spin text-blue-500" />
+          <div className="text-xs font-bold text-slate-300">Atanan paketler yükleniyor...</div>
         </div>
-      </header>
-
-      {/* ── Main Container ── */}
-      <div className="p-4 sm:p-6 max-w-6xl mx-auto flex flex-col lg:flex-row gap-6 sm:gap-8 mt-2 relative z-10">
-
-        {/* ── Sol Menü ── */}
-        <aside className="lg:w-64 shrink-0 flex flex-col gap-4">
-          <div className="rounded-2xl border border-slate-700/50 bg-slate-900/60 backdrop-blur-xl p-3 shadow-xl space-y-1.5">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 pt-2 pb-1">
-              Saha Menüsü
-            </div>
-
-            <Link
-              href="/saha"
-              className="flex items-center justify-between px-3.5 py-3 text-xs font-semibold rounded-xl transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white"
-            >
-              <div className="flex items-center gap-2.5">
-                <ClipboardList className="h-4 w-4 text-slate-400" />
-                <span>Bildirim İşlemleri</span>
-              </div>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-600" />
-            </Link>
-
-            <Link
-              href="/saha/qr-listesi"
-              className="flex items-center justify-between px-3.5 py-3 text-xs font-bold rounded-xl transition-all bg-blue-500/20 border border-blue-500/35 text-white shadow-md shadow-blue-500/10"
-            >
-              <div className="flex items-center gap-2.5">
-                <PackageSearch className="h-4 w-4 text-blue-400" />
-                <span>Servis Kutuları</span>
-              </div>
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_6px_rgba(96,165,250,0.8)]" />
-            </Link>
+      ) : qrPackages.length === 0 ? (
+        <div className="p-10 text-center bg-slate-900/60 rounded-2xl border border-slate-800 backdrop-blur-xl flex flex-col items-center justify-center space-y-3 shadow-xl">
+          <div className="w-16 h-16 rounded-2xl bg-slate-800/90 border border-slate-700/80 flex items-center justify-center shadow-inner">
+            <PackageSearch className="h-8 w-8 text-slate-500" />
           </div>
-        </aside>
-
-        {/* ── Ana İçerik ── */}
-        <main className="flex-1 space-y-4 min-w-0">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <QrCode className="h-4 w-4 text-blue-400" />
-              Size Atanan İş Listeleri
-            </h2>
-            <span className="text-xs text-slate-400 font-medium">{qrPackages.length} Paket</span>
+          <div className="text-sm font-extrabold text-slate-200">Atanmış Servis Kutusu Paketiniz Bulunmuyor</div>
+          <p className="text-xs text-slate-400 max-w-md leading-relaxed">
+            Yapım ofisi tarafından ekibinize henüz atanan bir servis kutusu QR paketi bulunmuyor. Yeni bir paket atandığında burada görüntülenecektir.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1 text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <span>Paket Listesi ({qrPackages.length})</span>
+            <span>İşlemler</span>
           </div>
 
-          {loading ? (
-            <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
-              <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
-              <span className="text-xs font-semibold">Listeler taranıyor...</span>
-            </div>
-          ) : qrPackages.length === 0 ? (
-            <div className="p-10 text-center bg-slate-900/60 rounded-2xl border border-slate-700/50 backdrop-blur-xl flex flex-col items-center space-y-3">
-              <div className="w-16 h-16 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center">
-                <PackageSearch className="h-8 w-8 text-slate-500" />
-              </div>
-              <div className="text-sm font-bold text-slate-200">Atanan Liste Bulunamadı</div>
-              <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
-                Yapım ofisi tarafından ekibinize atanmış aktif bir servis kutusu QR paketi bulunmuyor.
-              </p>
-            </div>
-          ) : (
-            qrPackages.map((qr) => (
+          <div className="space-y-2.5">
+            {qrPackages.map((qr) => (
               <div
                 key={qr.id}
-                className={`rounded-2xl border p-5 backdrop-blur-xl transition-all hover:bg-slate-800/50 space-y-4 ${
-                  qr.status === 'SENT'
-                    ? 'border-emerald-500/40 bg-emerald-500/5 shadow-lg shadow-emerald-500/5'
-                    : 'border-slate-700/50 bg-slate-900/60'
-                }`}
+                className={`rounded-2xl border p-4 sm:p-4.5 backdrop-blur-xl transition-all duration-200 shadow-lg hover:shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${qr.status === 'SENT'
+                  ? 'border-emerald-500/40 bg-slate-900/90 shadow-emerald-500/5 ring-1 ring-emerald-500/20'
+                  : 'border-slate-800 bg-slate-900/80 hover:bg-slate-900/95'
+                  }`}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/25 flex items-center justify-center text-blue-400">
-                      <QrCode className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <div className="font-bold text-white text-sm tracking-wide">{qr.id}</div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">{formatDate(qr.createdAt)}</div>
-                    </div>
+                {/* Left info area */}
+                <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                  <div className="w-11 h-11 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0 shadow-md">
+                    <QrCode className="h-5.5 w-5.5" />
                   </div>
 
-                  {qr.status === 'SENT' && (
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Yeni İş Emri
-                    </span>
-                  )}
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <span className="font-black text-white text-sm sm:text-base tracking-wide">
+                        {qr.id}
+                      </span>
+
+                      {qr.status === 'SENT' ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/35 flex items-center gap-1 shrink-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          Yeni İş Emri
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/15 text-blue-300 border border-blue-500/30 flex items-center gap-1 shrink-0">
+                          <Eye className="h-3 w-3" />
+                          Aktif Paket
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
+                      <div className="flex items-center gap-1 text-slate-300 font-semibold">
+                        <Layers className="h-3.5 w-3.5 text-emerald-400" />
+                        <span>{qr.serviceBoxIds?.length || 0} Kutu</span>
+                      </div>
+                      <span className="text-slate-600">•</span>
+                      <div className="flex items-center gap-1 truncate">
+                        <MapPin className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+                        <span className="truncate">
+                          {qr.filters?.districts?.length > 0 ? qr.filters.districts.join(', ') : 'Tüm İlçeler'}
+                        </span>
+                      </div>
+                      <span className="text-slate-600 hidden sm:inline">•</span>
+                      <div className="flex items-center gap-1 text-slate-400">
+                        <Clock className="h-3.5 w-3.5 text-slate-500" />
+                        <span>{formatDate(qr.sentAt || qr.createdAt)}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-800/50 border border-slate-700/40 text-xs">
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Kayıt Sayısı</span>
-                    <span className="font-black text-white text-sm mt-0.5 block">{qr.serviceBoxIds.length} Kutu</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">İlçeler</span>
-                    <span className="font-semibold text-slate-200 mt-0.5 block truncate">
-                      {qr.filters.districts.length > 0 ? qr.filters.districts.join(', ') : 'Tümü'}
-                    </span>
-                  </div>
+                {/* Right button action */}
+                <div className="shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/80">
+                  <Link
+                    href={`/saha/qr-listesi/${qr.id}`}
+                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 shadow-md shadow-blue-600/25 flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer group"
+                  >
+                    <span>LİSTEYİ VE HARİTAYI AÇ</span>
+                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </Link>
                 </div>
-
-                <Link
-                  href={`/saha/qr-listesi/${qr.id}`}
-                  className="w-full py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 shadow-md shadow-blue-600/25 flex items-center justify-center gap-2 transition-all"
-                >
-                  <span>LİSTEYİ AÇ</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
               </div>
-            ))
-          )}
-        </main>
-      </div>
+            ))}
+          </div>
+        </div>
+      )}
 
     </div>
   );
