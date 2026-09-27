@@ -5,24 +5,29 @@ import { useRouter, usePathname } from 'next/navigation';
 import {
   Menu, X, LogOut, LayoutDashboard, Box,
   CheckSquare, Users, Map as MapIcon, QrCode,
-  FileText, Shield, ChevronRight, FileCheck, TrendingUp
+  FileText, Shield, ChevronRight, ChevronDown, FileCheck, TrendingUp, Building2, MessageSquareWarning
 } from 'lucide-react';
 
 const MODULE_LINKS = [
-  { name: 'Dashboard',         href: '/yapim/dashboard',          icon: LayoutDashboard },
-  { name: 'Servis Kutuları',   href: '/yapim/service-boxes',      icon: Box },
-  { name: 'Saha Bildirimleri', href: '/yapim/field-reports',      icon: CheckSquare },
+  { name: 'Dashboard', href: '/yapim/dashboard', icon: LayoutDashboard },
   { name: 'Büyükşehir Yetki Kontrolü', href: '/yapim/excavation-permits', icon: FileCheck },
-  { name: 'Ekipler',           href: '/yapim/teams',              icon: Users },
-  { name: 'Operasyon Haritası',href: '/yapim/map',                icon: MapIcon },
-  { name: 'QR Yönetimi',       href: '/yapim/qr',                 icon: QrCode },
-  { name: 'Yatırım İzleme',    href: '/yapim/reports',            icon: TrendingUp },
+  { name: 'Servis Kutuları', href: '/yapim/service-boxes', icon: Box },
+  { name: 'Saha Bildirimleri', href: '/yapim/field-reports', icon: CheckSquare },
+  { name: 'Ekipler', href: '/yapim/teams', icon: Users },
+  { name: 'Operasyon Haritası', href: '/yapim/map', icon: MapIcon },
+  { name: 'Servis Kutuları (Saha)', href: '/yapim/qr', icon: QrCode },
+  { name: 'Yatırım İzleme', href: '/yapim/reports', icon: TrendingUp },
+  { name: 'Yatırım İzleme (Harita)', href: '/yapim/investment-map', icon: MapIcon },
+  { name: 'Şikayet Listesi', href: '/yapim/complaints', icon: MessageSquareWarning },
 ];
 
 export function Header() {
   const router   = useRouter();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileYapimOfisOpen, setMobileYapimOfisOpen] = useState(() => {
+    return ['/yapim/excavation-permits', '/yapim/service-boxes', '/yapim/reports', '/yapim/investment-map', '/yapim/complaints'].some(path => pathname.startsWith(path));
+  });
 
   // Sayfa değiştiğinde mobil menüyü otomatik kapat
   useEffect(() => {
@@ -127,7 +132,79 @@ export function Header() {
                 Operasyon Sekmeleri
               </div>
 
-              {MODULE_LINKS.map((link) => {
+              {/* Dashboard */}
+              <Link
+                href="/yapim/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  pathname.startsWith('/yapim/dashboard')
+                    ? 'bg-blue-600/20 text-white border border-blue-500/35 shadow-[0_0_15px_rgba(59,130,246,0.15)] font-bold'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <LayoutDashboard className="h-4 w-4 text-slate-400" />
+                  <span>Dashboard</span>
+                </div>
+              </Link>
+
+              {/* Yapım Ofis Collapsible Group */}
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setMobileYapimOfisOpen(!mobileYapimOfisOpen)}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                    ['/yapim/excavation-permits', '/yapim/service-boxes', '/yapim/reports', '/yapim/investment-map', '/yapim/complaints'].some(path => pathname.startsWith(path))
+                      ? 'bg-blue-600/10 text-blue-400 border border-blue-500/25'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Building2 className="h-4 w-4 text-blue-400" />
+                    <span>Yapım Ofis</span>
+                  </div>
+                  {mobileYapimOfisOpen ? <ChevronDown className="h-3.5 w-3.5 text-slate-400" /> : <ChevronRight className="h-3.5 w-3.5 text-slate-400" />}
+                </button>
+
+                {mobileYapimOfisOpen && (
+                  <div className="pl-4 ml-2 border-l border-slate-700/60 space-y-1">
+                    {[
+                      { name: 'Büyükşehir Yetki Kontrolü', href: '/yapim/excavation-permits', icon: FileCheck },
+                      { name: 'Servis Kutuları', href: '/yapim/service-boxes', icon: Box },
+                      { name: 'Yatırım İzleme', href: '/yapim/reports', icon: TrendingUp },
+                      { name: 'Yatırım İzleme (Harita)', href: '/yapim/investment-map', icon: MapIcon },
+                      { name: 'Şikayet Listesi', href: '/yapim/complaints', icon: MessageSquareWarning },
+                    ].map((sub) => {
+                      const isSubActive = pathname.startsWith(sub.href);
+                      return (
+                        <Link
+                          key={sub.name}
+                          href={sub.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`flex items-center justify-between px-2.5 py-2 rounded-lg text-xs transition-all ${
+                            isSubActive
+                              ? 'bg-blue-600/20 text-white font-bold border border-blue-500/30'
+                              : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <sub.icon className={`h-3.5 w-3.5 ${isSubActive ? 'text-blue-400' : 'text-slate-400'}`} />
+                            <span className="truncate">{sub.name}</span>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Other links */}
+              {[
+                { name: 'Saha Bildirimleri', href: '/yapim/field-reports', icon: CheckSquare },
+                { name: 'Ekipler', href: '/yapim/teams', icon: Users },
+                { name: 'Operasyon Haritası', href: '/yapim/map', icon: MapIcon },
+                { name: 'Servis Kutuları (Saha)', href: '/yapim/qr', icon: QrCode },
+              ].map((link) => {
                 const isActive = pathname.startsWith(link.href);
                 return (
                   <Link

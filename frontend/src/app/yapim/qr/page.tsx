@@ -1,21 +1,45 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
 import {
-  Download, FileText, QrCode, Send, ArrowLeft, Loader2,
-  CheckCircle2, AlertCircle, Building2, Clock, ArrowUpDown,
-  Layers, MapPin, Phone, User, Check, Sparkles, Filter,
-  ShieldAlert, RefreshCw, X
+  FileText, Send, Loader2, AlertCircle, Building2, Clock,
+  ArrowUpDown, User, Check, Filter, ShieldAlert, RefreshCw, X,
+  ChevronLeft, ChevronRight, Phone
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { serviceBoxService } from '@/lib/services/serviceBoxService';
 import { qrService } from '@/lib/services/qrService';
 import { teamService } from '@/lib/services/teamService';
 import { filterServiceBoxesForQR } from '@/lib/utils/serviceBoxFilters';
-import { ServiceBox, FieldTeam, QRPackage } from '@/types';
+import { ServiceBox, FieldTeam } from '@/types';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+
+/* ── Helper: Extract Phone Number from Box or Extra Fields ──────── */
+function getBoxPhone(box: ServiceBox): string {
+  if (box.phone && box.phone.trim() !== '' && box.phone !== '—') return box.phone.trim();
+  if (box.extraFields) {
+    for (const [key, val] of Object.entries(box.extraFields)) {
+      const lowerKey = key.toLowerCase();
+      if ((lowerKey.includes('telefon') || lowerKey.includes('gsm') || lowerKey.includes('tel') || lowerKey.includes('iletisim')) && val && String(val).trim() !== '') {
+        return String(val).trim();
+      }
+    }
+  }
+  return '';
+}
+
+/* ── Helper: Convert Turkish Characters to ASCII for Clean PDF Rendering ── */
+function trToAscii(text: string = ''): string {
+  if (!text) return '';
+  return text
+    .replace(/ğ/g, 'g').replace(/Ğ/g, 'G')
+    .replace(/ü/g, 'u').replace(/Ü/g, 'U')
+    .replace(/ş/g, 's').replace(/Ş/g, 'S')
+    .replace(/ı/g, 'i').replace(/İ/g, 'I')
+    .replace(/ö/g, 'o').replace(/Ö/g, 'O')
+    .replace(/ç/g, 'c').replace(/Ç/g, 'C');
+}
 
 /* ── Reusable Glass Card ─────────────────────────────────────────── */
 function GlassCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -59,15 +83,15 @@ function CardHeader({
 
 export default function QRManagementPage() {
   const { toast } = useToast();
-  const [loading, setLoading]           = useState(true);
+  const [loading, setLoading] = useState(true);
   const [serviceBoxes, setServiceBoxes] = useState<ServiceBox[]>([]);
-  const [teams, setTeams]               = useState<FieldTeam[]>([]);
+  const [teams, setTeams] = useState<FieldTeam[]>([]);
 
   // Workflow State
-  const [lastStatus, setLastStatus]               = useState<"EMPTY" | "OTHER" | null>(null);
+  const [lastStatus, setLastStatus] = useState<"EMPTY" | "OTHER" | null>(null);
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
-  const [sortOrder, setSortOrder]                 = useState<"DESC" | "ASC" | null>("DESC");
-  const [isOver90Days, setIsOver90Days]           = useState(false);
+  const [sortOrder, setSortOrder] = useState<"DESC" | "ASC" | null>("DESC");
+  const [isOver90Days, setIsOver90Days] = useState(false);
 
   const clearFilters = () => {
     setLastStatus(null);
@@ -76,15 +100,17 @@ export default function QRManagementPage() {
     setIsOver90Days(false);
   };
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
+
   // Output State
-  const [generatedQR, setGeneratedQR]     = useState<QRPackage | null>(null);
-  const [generatingQR, setGeneratingQR]   = useState(false);
   const [generatingPDF, setGeneratingPDF] = useState(false);
 
   // Send State
-  const [sendDialogOpen, setSendDialogOpen]   = useState(false);
-  const [selectedTeamId, setSelectedTeamId]   = useState<string>('');
-  const [sending, setSending]                 = useState(false);
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -132,6 +158,20 @@ export default function QRManagementPage() {
     });
   }, [serviceBoxes, lastStatus, selectedDistricts, sortOrder, isOver90Days]);
 
+  // Reset to page 1 whenever filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [lastStatus, selectedDistricts, sortOrder, isOver90Days]);
+
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(filteredList.length / pageSize));
+  }, [filteredList.length, pageSize]);
+
+  const paginatedList = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredList.slice(start, start + pageSize);
+  }, [filteredList, currentPage, pageSize]);
+
   const toggleDistrict = (dist: string) => {
     setSelectedDistricts((prev) =>
       prev.includes(dist) ? prev.filter((d) => d !== dist) : [...prev, dist]
@@ -149,36 +189,33 @@ export default function QRManagementPage() {
       const doc = new jsPDF('landscape');
 
       // Header
-      doc.setFontSize(20);
-      doc.text("ENERYA", 14, 20);
-      doc.setFontSize(14);
-      doc.text("Servis Kutusu Is Emri Listesi", 14, 30);
+      doc.setFontSize(18);
+      doc.text("ENERYA - SERVIS KUTUSU IS EMRI LISTESI", 14, 18);
 
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       const today = new Date().toLocaleDateString('tr-TR');
-      doc.text(`Olusturulma Tarihi: ${today}`, 14, 40);
-      doc.text(`Son Durum Filtresi: ${lastStatus === 'EMPTY' ? 'Durumu Bos' : lastStatus === 'OTHER' ? 'Durumu Diger' : 'Tumu'}`, 14, 46);
-      doc.text(`Secili Ilceler: ${selectedDistricts.length > 0 ? selectedDistricts.join(', ') : 'Tumu'}`, 14, 52);
-      doc.text(`Yasal Bekleme Siniri: ${isOver90Days ? '> 90 Gun (Yasal Asim)' : 'Tumu'}`, 14, 58);
-      doc.text(`Siralama: ${sortOrder === 'DESC' ? 'Buyukten Kucuge (En Cok Bekleyen)' : sortOrder === 'ASC' ? 'Kucukten Buyuge' : 'Standart'}`, 14, 64);
+      doc.text(`Olusturulma Tarihi: ${today}`, 14, 26);
+      doc.text(trToAscii(`Son Durum Filtresi: ${lastStatus === 'EMPTY' ? 'Durumu Boş' : lastStatus === 'OTHER' ? 'Durumu Diğer' : 'Tümü'}`), 14, 32);
+      doc.text(trToAscii(`Seçili İlçeler: ${selectedDistricts.length > 0 ? selectedDistricts.join(', ') : 'Tümü'}`), 14, 38);
+      doc.text(trToAscii(`Yasal Bekleme Sınırı: ${isOver90Days ? '> 90 Gün (Yasal Aşım)' : 'Tümü'}`), 14, 44);
+      doc.text(trToAscii(`Sıralama: ${sortOrder === 'DESC' ? 'Büyükten Küçüğe (En Çok Bekleyen)' : sortOrder === 'ASC' ? 'Küçükten Büyüğe' : 'Standart'}`), 14, 50);
 
       const tableData = filteredList.map((box) => [
-        box.connectionObject,
-        box.address,
-        box.district,
-        box.neighborhood,
-        box.agreementDate || '-',
+        trToAscii(box.connectionObject),
+        trToAscii(box.address || '-'),
+        trToAscii(box.district || '-'),
+        trToAscii(box.neighborhood || '-'),
+        trToAscii(box.agreementDate || '-'),
         `${box.waitingDays} Gun`,
-        box.lastStatus || 'Bos',
-        box.name || '-',
-        box.phone || '-',
-        box.sectorInfo || '-',
-        box.sectorRegionInfo || '-',
+        trToAscii(box.lastStatus || 'Bos'),
+        trToAscii(box.name || '-'),
+        trToAscii(getBoxPhone(box) || '-'),
+        trToAscii(box.sectorInfo || box.sectorRegionInfo || '-'),
       ]);
 
       autoTable(doc, {
-        startY: 70,
-        head: [['Baglanti Nesnesi', 'Adres', 'Ilce', 'Mahalle', 'Anlasma Tarihi', 'Bekleme', 'Son Durum', 'Abone Adi', 'Telefon', 'Sektor', 'Bolge']],
+        startY: 56,
+        head: [['Baglanti Nesnesi', 'Adres', 'Ilce', 'Mahalle', 'Anlasma Tarihi', 'Bekleme', 'Son Durum', 'Abone Adi', 'Telefon', 'Sektor']],
         body: tableData,
         theme: 'grid',
         styles: { fontSize: 8 },
@@ -196,14 +233,20 @@ export default function QRManagementPage() {
     }
   };
 
-  const handleGenerateQR = async () => {
+  const handleOpenSendDialog = () => {
     if (filteredList.length === 0) {
-      toast({ title: 'Hata', description: 'Liste boş, QR oluşturulamaz.', variant: 'destructive' });
+      toast({ title: 'Uyarı', description: 'Seçili filtrelere uygun servis kutusu bulunamadı.', variant: 'destructive' });
       return;
     }
+    setSendDialogOpen(true);
+  };
 
-    setGeneratingQR(true);
+  const handleSendToTeam = async () => {
+    if (!selectedTeamId || filteredList.length === 0) return;
+
+    setSending(true);
     try {
+      // 1. Automatically generate QR Package for the selected list
       const pkg = await qrService.createQrPackage(
         {
           lastStatus: (lastStatus || "EMPTY") as "EMPTY" | "OTHER",
@@ -213,31 +256,18 @@ export default function QRManagementPage() {
         } as any,
         filteredList.map((b) => b.id)
       );
-      setGeneratedQR(pkg);
-      toast({ title: 'QR Paket Oluşturuldu', description: `${filteredList.length} kutu için mobil iş emri hazır.` });
-    } catch (error) {
-      toast({ title: 'Hata', description: 'QR oluşturulurken bir hata oluştu.', variant: 'destructive' });
-    } finally {
-      setGeneratingQR(false);
-    }
-  };
 
-  const handleSendToTeam = async () => {
-    if (!generatedQR || !selectedTeamId) return;
-
-    setSending(true);
-    try {
-      await qrService.sendQrPackage(generatedQR.id, selectedTeamId);
+      // 2. Dispatch package to team
+      await qrService.sendQrPackage(pkg.id, selectedTeamId);
 
       const team = teams.find((t) => t.id === selectedTeamId);
       toast({
-        title: 'QR İş Emri İletildi',
-        description: `QR paketi ${team?.code} (${team?.district}) ekibine başarıyla atandı.`,
+        title: 'İş Emri Saha Ekibine İletildi',
+        description: `${filteredList.length} adet servis kutusu iş paketi ${team?.code} (${team?.district}) ekibine başarıyla atandı.`,
       });
 
       // Reset
       setSendDialogOpen(false);
-      setGeneratedQR(null);
       setSelectedTeamId('');
     } catch (error) {
       toast({ title: 'Hata', description: 'Gönderim sırasında hata oluştu.', variant: 'destructive' });
@@ -251,419 +281,383 @@ export default function QRManagementPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-3 text-slate-400">
+      <div className="h-full bg-slate-950 flex flex-col items-center justify-center gap-3 text-slate-400">
         <RefreshCw className="h-8 w-8 animate-spin text-blue-500" />
-        <span className="text-sm font-semibold">QR Yönetim Modülü Yükleniyor...</span>
+        <span className="text-sm font-semibold">Servis Kutuları (Saha) Yükleniyor...</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100">
-      <div className="mx-auto max-w-[1600px] space-y-4 p-3.5 sm:p-5">
+    <div className="h-full max-h-full overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex flex-col justify-between p-2.5 sm:p-3 gap-2">
 
-        {/* ══ 2. WORKFLOW STEPPER ══════════════════════════════════════ */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-          {[
-            { step: '1', title: 'Filtreleri Belirle', desc: 'Durum, ilçe ve SLA seçimi', active: true, done: selectedDistricts.length > 0 || lastStatus !== null || isOver90Days },
-            { step: '2', title: 'Listeyi İncele', desc: `${filteredList.length} kayıt seçildi`, active: filteredList.length > 0, done: filteredList.length > 0 },
-            { step: '3', title: 'QR / PDF Üret', desc: generatedQR ? 'QR Paketi Hazır' : 'Tek tıkla dijitalleştir', active: !!generatedQR, done: !!generatedQR },
-            { step: '4', title: 'Ekibe Sevk Et', desc: 'Saha mobiline aktar', active: false, done: false },
-          ].map(({ step, title, desc, active, done }) => (
-            <div
-              key={step}
-              className={`p-2.5 sm:p-3 rounded-xl border backdrop-blur-sm transition-all ${
-                done
-                  ? 'border-blue-500/40 bg-blue-500/10 shadow-[0_0_12px_rgba(59,130,246,0.15)]'
-                  : active
-                  ? 'border-slate-600/50 bg-slate-800/60'
-                  : 'border-slate-800 bg-slate-900/40 opacity-70'
+      {/* ══ 1. WORKFLOW STEPPER ══════════════════════════════════════ */}
+      <div className="shrink-0 grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {[
+          { step: '1', title: 'Filtreleri Belirle', desc: 'Durum, ilçe ve SLA seçimi', active: true, done: selectedDistricts.length > 0 || lastStatus !== null || isOver90Days },
+          { step: '2', title: 'Listeyi İncele', desc: `${filteredList.length} kayıt seçildi`, active: filteredList.length > 0, done: filteredList.length > 0 },
+          { step: '3', title: 'Saha Ekibine Gönder', desc: 'Saha mobiline tek tıkla aktar', active: false, done: false },
+        ].map(({ step, title, desc, active, done }) => (
+          <div
+            key={step}
+            className={`p-2 rounded-xl border backdrop-blur-sm transition-all ${done
+              ? 'border-blue-500/40 bg-blue-500/10 shadow-[0_0_12px_rgba(59,130,246,0.15)]'
+              : active
+                ? 'border-slate-600/50 bg-slate-800/60'
+                : 'border-slate-800 bg-slate-900/40 opacity-70'
               }`}
-            >
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
-                    done
-                      ? 'bg-blue-500 text-white shadow-sm'
-                      : 'bg-slate-700 text-slate-300'
+          >
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 ${done
+                  ? 'bg-blue-500 text-white shadow-sm'
+                  : 'bg-slate-700 text-slate-300'
                   }`}
-                >
-                  {done ? <Check className="h-3 w-3" /> : step}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-white truncate">{title}</div>
-                  <div className="text-[10px] text-slate-400 truncate">{desc}</div>
-                </div>
+              >
+                {done ? <Check className="h-2.5 w-2.5" /> : step}
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-white truncate">{title}</div>
+                <div className="text-[10px] text-slate-400 truncate">{desc}</div>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
+      </div>
 
-        {/* ══ 3. MAIN WORKFLOW: FILTERS (2 COLS) + QR PREVIEW (1 COL) ═ */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-5">
+      {/* ══ 2. MAIN WORKFLOW: FILTERS (LEFT) & PREVIEW (RIGHT) ════════ */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0 overflow-hidden">
 
-          {/* Sol Kolon - Filtreler ve Önizleme (2 Kolon) */}
-          <div className="xl:col-span-2 space-y-4">
+        {/* ── SOL KOLON: FİLTRELER ── */}
+        <div className="lg:col-span-5 flex flex-col gap-2 overflow-y-auto pr-0.5">
 
-            {/* Filtre Başlığı & Temizleme */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-bold text-white flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-blue-400" />
-                  İş Emri Filtreleme Kriterleri
-                </h2>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Sahaya gönderilecek servis kutularını seçin
-                </p>
-              </div>
+          {/* Filtre Başlığı & Temizleme */}
+          <div className="flex items-center justify-between shrink-0">
+            <div>
+              <h2 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
+                <Filter className="h-3.5 w-3.5 text-blue-400" />
+                İş Emri Filtreleme Kriterleri
+              </h2>
+              <p className="text-[10px] text-slate-400">
+                Sahaya gönderilecek servis kutularını seçin
+              </p>
+            </div>
 
-              {(lastStatus !== null || selectedDistricts.length > 0 || isOver90Days || sortOrder !== 'DESC') && (
+            {(lastStatus !== null || selectedDistricts.length > 0 || isOver90Days || sortOrder !== 'DESC') && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/25 hover:bg-rose-500/20 transition-all"
+              >
+                <X className="h-3 w-3" />
+                Temizle
+              </button>
+            )}
+          </div>
+
+          {/* 1. Son Durum Filtresi */}
+          <GlassCard className="shrink-0">
+            <CardHeader
+              icon={AlertCircle}
+              iconColor="text-blue-400"
+              iconBg="bg-blue-500/10"
+              title="1. Son Durum Seçimi"
+              subtitle="Durum kaydına göre süzme"
+            />
+            <div className="p-2.5">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={clearFilters}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/25 hover:bg-rose-500/20 active:scale-95 transition-all"
+                  onClick={() => setLastStatus(lastStatus === "EMPTY" ? null : "EMPTY")}
+                  className={`p-2.5 rounded-lg border text-left transition-all relative overflow-hidden group ${lastStatus === "EMPTY"
+                      ? 'border-blue-500/60 bg-blue-500/15 shadow-[0_0_12px_rgba(59,130,246,0.2)] text-white'
+                      : 'border-slate-700/50 bg-slate-900/50 text-slate-300 hover:border-slate-600 hover:bg-slate-800/60'
+                    }`}
                 >
-                  <X className="h-3.5 w-3.5" />
-                  Filtreleri Sıfırla
-                </button>
-              )}
-            </div>
-
-            {/* ── 1. Son Durum Filtresi ── */}
-            <GlassCard>
-              <CardHeader
-                icon={AlertCircle}
-                iconColor="text-blue-400"
-                iconBg="bg-blue-500/10"
-                title="1. Son Durum Seçimi"
-                subtitle="Servis kutusunun sistemdeki son durum kaydına göre süzme"
-              />
-              <div className="p-3 sm:p-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setLastStatus(lastStatus === "EMPTY" ? null : "EMPTY")}
-                    className={`p-3 sm:p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group ${
-                      lastStatus === "EMPTY"
-                        ? 'border-blue-500/60 bg-blue-500/15 shadow-[0_0_15px_rgba(59,130,246,0.2)] text-white'
-                        : 'border-slate-700/50 bg-slate-900/50 text-slate-300 hover:border-slate-600 hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-0.5 flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-amber-400" />
-                          Durumu Boş Olanlar
-                        </div>
-                        <div className="text-xl font-extrabold text-white">{emptyBoxesCount}</div>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                        Durumu Boş
                       </div>
-                      {lastStatus === "EMPTY" ? (
-                        <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-sm">
-                          <Check className="h-3 w-3" />
-                        </div>
-                      ) : (
-                        <div className="w-5 h-5 rounded-full border border-slate-700 flex items-center justify-center text-slate-500 group-hover:border-slate-500" />
-                      )}
+                      <div className="text-lg font-extrabold text-white">{emptyBoxesCount}</div>
                     </div>
-                    <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1.5">
-                      Son durum alanı boş olan, sahada montaj / durum girişi bekleyen kutular.
-                    </p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setLastStatus(lastStatus === "OTHER" ? null : "OTHER")}
-                    className={`p-3 sm:p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group ${
-                      lastStatus === "OTHER"
-                        ? 'border-blue-500/60 bg-blue-500/15 shadow-[0_0_15px_rgba(59,130,246,0.2)] text-white'
-                        : 'border-slate-700/50 bg-slate-900/50 text-slate-300 hover:border-slate-600 hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-0.5 flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-blue-400" />
-                          Durumu Diğer Olanlar
-                        </div>
-                        <div className="text-xl font-extrabold text-white">{otherBoxesCount}</div>
-                      </div>
-                      {lastStatus === "OTHER" ? (
-                        <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-sm">
-                          <Check className="h-3 w-3" />
-                        </div>
-                      ) : (
-                        <div className="w-5 h-5 rounded-full border border-slate-700 flex items-center justify-center text-slate-500 group-hover:border-slate-500" />
-                      )}
-                    </div>
-                    <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1.5">
-                      Son durum alanında önceden değer girilmiş, takipteki servis kutuları.
-                    </p>
-                  </button>
-                </div>
-              </div>
-            </GlassCard>
-
-            {/* ── 2. İlçe Seçimi ── */}
-            <GlassCard>
-              <CardHeader
-                icon={Building2}
-                iconColor="text-teal-400"
-                iconBg="bg-teal-500/10"
-                title="2. İlçe Seçimi"
-                subtitle="İş emri paketine dahil edilecek ilçeleri belirleyin"
-                action={
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedDistricts(allDistricts)}
-                      className="px-2 py-0.5 rounded text-[11px] font-semibold text-slate-300 bg-slate-700/50 border border-slate-600/40 hover:bg-slate-700 hover:text-white transition-colors"
-                    >
-                      Tümünü Seç
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedDistricts([])}
-                      className="px-2 py-0.5 rounded text-[11px] font-semibold text-slate-400 hover:text-slate-200 transition-colors"
-                    >
-                      Temizle
-                    </button>
-                  </div>
-                }
-              />
-              <div className="p-3 sm:p-4">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                  {allDistricts.map((dist) => {
-                    const count      = districtCounts[dist] || 0;
-                    const isSelected = selectedDistricts.includes(dist);
-                    return (
-                      <button
-                        key={dist}
-                        type="button"
-                        onClick={() => toggleDistrict(dist)}
-                        className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold flex items-center justify-between gap-1.5 transition-all ${
-                          isSelected
-                            ? 'bg-blue-600/25 border-blue-500/50 text-white shadow-sm shadow-blue-500/20'
-                            : 'bg-slate-900/60 text-slate-300 border-slate-700/40 hover:bg-slate-800/80 hover:border-slate-600'
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                              isSelected ? 'bg-blue-400 shadow-[0_0_6px_rgba(96,165,250,0.8)]' : 'bg-slate-500'
-                            }`}
-                          />
-                          <span className="truncate text-[11px]">{dist}</span>
-                        </div>
-                        <span
-                          className={`text-[9.5px] px-1.5 py-0.2 rounded font-bold shrink-0 ${
-                            isSelected
-                              ? 'bg-blue-500/30 text-blue-200 border border-blue-500/30'
-                              : 'bg-slate-800 text-slate-400'
-                          }`}
-                        >
-                          {count}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </GlassCard>
-
-            {/* ── 3 & 4. Bekleme Süresi & Sıralama (Yan Yana) ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-              {/* Bekleme Süresi */}
-              <GlassCard>
-                <CardHeader
-                  icon={Clock}
-                  iconColor="text-amber-400"
-                  iconBg="bg-amber-500/10"
-                  title="3. Yasal SLA Sınırı"
-                  subtitle="Mevzuat bekleme süresi aşımı"
-                />
-                <div className="p-3 sm:p-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsOver90Days(!isOver90Days)}
-                    className={`w-full p-2.5 rounded-lg border text-xs font-bold flex items-center justify-between gap-2 transition-all ${
-                      isOver90Days
-                        ? 'bg-rose-500/20 border-rose-500/50 text-rose-200 shadow-md shadow-rose-500/10'
-                        : 'bg-slate-900/60 border-slate-700/40 text-slate-300 hover:bg-slate-800/80'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <ShieldAlert className={`h-4 w-4 ${isOver90Days ? 'text-rose-400' : 'text-slate-400'}`} />
-                      <span>&gt; 90 Gün (Yasal Limit Aşımı)</span>
-                    </div>
-                    {isOver90Days ? (
-                      <span className="w-4 h-4 rounded-full bg-rose-500 flex items-center justify-center text-white">
+                    {lastStatus === "EMPTY" ? (
+                      <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-sm">
                         <Check className="h-2.5 w-2.5" />
-                      </span>
+                      </div>
                     ) : (
-                      <span className="w-4 h-4 rounded-full border border-slate-700" />
+                      <div className="w-4 h-4 rounded-full border border-slate-700 flex items-center justify-center text-slate-500 group-hover:border-slate-500" />
                     )}
-                  </button>
-                  <p className="text-[10px] text-slate-500 mt-1.5">
-                    Sadece 90 günü aşmış ve acil müdahale gerektiren aboneleri filtreler.
-                  </p>
-                </div>
-              </GlassCard>
-
-              {/* Sıralama */}
-              <GlassCard>
-                <CardHeader
-                  icon={ArrowUpDown}
-                  iconColor="text-indigo-400"
-                  iconBg="bg-indigo-500/10"
-                  title="4. Liste Sıralaması"
-                  subtitle="Bekleme gününe göre önceliklendirme"
-                />
-                <div className="p-3 sm:p-4">
-                  <div className="flex bg-slate-900/80 p-1 rounded-lg border border-slate-700/50 gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setSortOrder('DESC')}
-                      className={`flex-1 py-2 px-2.5 text-xs font-bold rounded transition-all ${
-                        sortOrder === 'DESC'
-                          ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      Büyükten Küçüğe (99 → 0)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSortOrder('ASC')}
-                      className={`flex-1 py-2 px-2.5 text-xs font-bold rounded transition-all ${
-                        sortOrder === 'ASC'
-                          ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      Küçükten Büyüğe (0 → 99)
-                    </button>
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-1.5">
-                    En çok bekleyen kritik kutular listenin en üstünde yer alır.
+                  <p className="text-[9.5px] text-slate-400 mt-1">
+                    Durum girişi bekleyenler
                   </p>
-                </div>
-              </GlassCard>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setLastStatus(lastStatus === "OTHER" ? null : "OTHER")}
+                  className={`p-2.5 rounded-lg border text-left transition-all relative overflow-hidden group ${lastStatus === "OTHER"
+                      ? 'border-blue-500/60 bg-blue-500/15 shadow-[0_0_12px_rgba(59,130,246,0.2)] text-white'
+                      : 'border-slate-700/50 bg-slate-900/50 text-slate-300 hover:border-slate-600 hover:bg-slate-800/60'
+                    }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                        Durumu Diğer
+                      </div>
+                      <div className="text-lg font-extrabold text-white">{otherBoxesCount}</div>
+                    </div>
+                    {lastStatus === "OTHER" ? (
+                      <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-sm">
+                        <Check className="h-2.5 w-2.5" />
+                      </div>
+                    ) : (
+                      <div className="w-4 h-4 rounded-full border border-slate-700 flex items-center justify-center text-slate-500 group-hover:border-slate-500" />
+                    )}
+                  </div>
+                  <p className="text-[9.5px] text-slate-400 mt-1">
+                    Önceden değer girilmişler
+                  </p>
+                </button>
+              </div>
             </div>
+          </GlassCard>
 
-            {/* ── 5. Filtre Sonucu & Önizleme Listesi ── */}
-            <GlassCard>
-              <div className="px-4 py-3 border-b border-slate-700/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs sm:text-sm font-bold text-white">İş Emri Önizleme</span>
-                    <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[11px] font-bold">
-                      {filteredList.length} Kutu
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    <span className="px-1.5 py-0.5 rounded bg-slate-700/50 border border-slate-600/40 text-[10px] text-slate-300 font-medium">
-                      Durum: {lastStatus === "EMPTY" ? "Boş" : lastStatus === "OTHER" ? "Diğer" : "Tümü"}
-                    </span>
-                    {selectedDistricts.length > 0 && (
-                      <span className="px-1.5 py-0.5 rounded bg-slate-700/50 border border-slate-600/40 text-[10px] text-slate-300 font-medium">
-                        İlçe: {selectedDistricts.join(', ')}
-                      </span>
-                    )}
-                    {isOver90Days && (
-                      <span className="px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/30 text-[10px] text-red-300 font-bold">
-                        &gt; 90 Gün
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* PDF & QR Buttons */}
-                <div className="flex items-center gap-2 shrink-0">
+          {/* 2. İlçe Seçimi */}
+          <GlassCard className="shrink-0">
+            <CardHeader
+              icon={Building2}
+              iconColor="text-teal-400"
+              iconBg="bg-teal-500/10"
+              title="2. İlçe Seçimi"
+              subtitle="Dahil edilecek ilçeleri seçin"
+              action={
+                <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    onClick={handleGeneratePDF}
-                    disabled={generatingPDF || filteredList.length === 0}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-300 bg-rose-500/15 border border-rose-500/30 hover:bg-rose-500/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    onClick={() => setSelectedDistricts(allDistricts)}
+                    className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-slate-300 bg-slate-700/50 border border-slate-600/40 hover:bg-slate-700 transition-colors"
                   >
-                    {generatingPDF ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <FileText className="h-3.5 w-3.5 text-rose-400" />
-                    )}
-                    PDF İndir
+                    Tümünü Seç
                   </button>
-
                   <button
                     type="button"
-                    onClick={handleGenerateQR}
-                    disabled={generatingQR || filteredList.length === 0}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-md shadow-blue-500/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    onClick={() => setSelectedDistricts([])}
+                    className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-slate-400 hover:text-slate-200 transition-colors"
                   >
-                    {generatingQR ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <QrCode className="h-3.5 w-3.5" />
-                    )}
-                    QR Kod Oluştur
+                    Temizle
+                  </button>
+                </div>
+              }
+            />
+            <div className="p-2">
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
+                {allDistricts.map((dist) => {
+                  const count = districtCounts[dist] || 0;
+                  const isSelected = selectedDistricts.includes(dist);
+                  return (
+                    <button
+                      key={dist}
+                      type="button"
+                      onClick={() => toggleDistrict(dist)}
+                      className={`px-1.5 py-1 rounded border text-[10.5px] font-semibold flex items-center justify-between gap-1 transition-all ${isSelected
+                          ? 'bg-blue-600/25 border-blue-500/50 text-white shadow-sm'
+                          : 'bg-slate-900/60 text-slate-300 border-slate-700/40 hover:bg-slate-800/80 hover:border-slate-600'
+                        }`}
+                    >
+                      <span className="truncate">{dist}</span>
+                      <span
+                        className={`text-[8.5px] px-1 rounded font-bold shrink-0 ${isSelected
+                            ? 'bg-blue-500/30 text-blue-200'
+                            : 'bg-slate-800 text-slate-400'
+                          }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </GlassCard>
+
+          {/* 3 & 4. Bekleme Süresi & Sıralama (Yan Yana) */}
+          <div className="grid grid-cols-2 gap-2 shrink-0">
+            {/* Bekleme Süresi */}
+            <GlassCard>
+              <CardHeader
+                icon={Clock}
+                iconColor="text-amber-400"
+                iconBg="bg-amber-500/10"
+                title="3. SLA Sınırı"
+                subtitle="Mevzuat aşımı"
+              />
+              <div className="p-2">
+                <button
+                  type="button"
+                  onClick={() => setIsOver90Days(!isOver90Days)}
+                  className={`w-full p-2 rounded-lg border text-[10.5px] font-bold flex items-center justify-between gap-1 transition-all ${isOver90Days
+                      ? 'bg-rose-500/20 border-rose-500/50 text-rose-200'
+                      : 'bg-slate-900/60 border-slate-700/40 text-slate-300 hover:bg-slate-800/80'
+                    }`}
+                >
+                  <div className="flex items-center gap-1.5 truncate">
+                    <ShieldAlert className={`h-3.5 w-3.5 shrink-0 ${isOver90Days ? 'text-rose-400' : 'text-slate-400'}`} />
+                    <span className="truncate">&gt; 90 Gün Aşımı</span>
+                  </div>
+                  {isOver90Days ? (
+                    <span className="w-3.5 h-3.5 rounded-full bg-rose-500 flex items-center justify-center text-white shrink-0">
+                      <Check className="h-2 w-2" />
+                    </span>
+                  ) : (
+                    <span className="w-3.5 h-3.5 rounded-full border border-slate-700 shrink-0" />
+                  )}
+                </button>
+              </div>
+            </GlassCard>
+
+            {/* Sıralama */}
+            <GlassCard>
+              <CardHeader
+                icon={ArrowUpDown}
+                iconColor="text-indigo-400"
+                iconBg="bg-indigo-500/10"
+                title="4. Sıralama"
+                subtitle="Önceliklendirme"
+              />
+              <div className="p-2">
+                <div className="flex bg-slate-900/80 p-0.5 rounded-lg border border-slate-700/50 gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setSortOrder('DESC')}
+                    className={`flex-1 py-1 px-1.5 text-[10px] font-bold rounded transition-all ${sortOrder === 'DESC'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                  >
+                    Büyükten Küçüğe
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSortOrder('ASC')}
+                    className={`flex-1 py-1 px-1.5 text-[10px] font-bold rounded transition-all ${sortOrder === 'ASC'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                  >
+                    Küçükten Büyüğe
                   </button>
                 </div>
               </div>
+            </GlassCard>
+          </div>
 
-              {/* Masaüstü Tablo (hidden sm:block) */}
-              <div className="hidden sm:block overflow-x-auto max-h-[360px] overflow-y-auto">
-                <table className="w-full text-xs text-left border-collapse">
-                  <thead className="bg-slate-900/90 border-b border-slate-700/50 text-[10px] font-bold text-slate-400 uppercase tracking-wider sticky top-0 backdrop-blur-sm z-10">
+        </div>
+
+        {/* ── SAĞ KOLON: İŞ EMRİ ÖNİZLEME LİSTESİ ── */}
+        <div className="lg:col-span-7 h-full flex flex-col min-h-0 overflow-hidden">
+          <GlassCard className="h-full flex flex-col min-h-0 overflow-hidden">
+            <div className="px-3.5 py-2.5 border-b border-slate-700/40 flex flex-wrap items-center justify-between gap-2 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-white">İş Emri Önizleme Listesi</span>
+                <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10.5px] font-extrabold">
+                  {filteredList.length} Kutu
+                </span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleGeneratePDF}
+                  disabled={generatingPDF || filteredList.length === 0}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-rose-300 bg-rose-500/15 border border-rose-500/30 hover:bg-rose-500/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  {generatingPDF ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <FileText className="h-3 w-3 text-rose-400" />
+                  )}
+                  PDF İndir
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleOpenSendDialog}
+                  disabled={filteredList.length === 0}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-sm shadow-blue-500/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  <Send className="h-3 w-3" />
+                  Saha Ekibine Gönder
+                </button>
+              </div>
+            </div>
+
+            {/* Tablo İç Alanı (20 Kayıt İçin Scrollable İç Bölme) */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              <table className="w-full table-fixed text-[9.5px] text-left border-collapse">
+                <thead className="bg-slate-900/95 border-b border-slate-700/50 text-[8.5px] font-bold text-slate-400 uppercase tracking-wider sticky top-0 backdrop-blur-md z-10">
+                  <tr>
+                    <th className="w-[13%] px-1.5 py-1.5 truncate">Bağlantı Nesnesi</th>
+                    <th className="w-[17%] px-1.5 py-1.5 truncate">Adres</th>
+                    <th className="w-[14%] px-1.5 py-1.5 truncate">İlçe / Mahalle</th>
+                    <th className="w-[8%] px-1.5 py-1.5 truncate text-center">Tarih</th>
+                    <th className="w-[7%] px-1.5 py-1.5 text-center truncate">Bekleme</th>
+                    <th className="w-[8%] px-1.5 py-1.5 text-center truncate">Son Durum</th>
+                    <th className="w-[11%] px-1.5 py-1.5 truncate">Abone Adı</th>
+                    <th className="w-[12%] px-1.5 py-1.5 truncate">Telefon</th>
+                    <th className="w-[10%] px-1.5 py-1.5 truncate">Sektör</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-700/25">
+                  {filteredList.length === 0 ? (
                     <tr>
-                      <th className="px-3.5 py-2">Bağlantı Nesnesi</th>
-                      <th className="px-3.5 py-2">Adres</th>
-                      <th className="px-3.5 py-2">İlçe / Mahalle</th>
-                      <th className="px-3.5 py-2 text-center">Bekleme</th>
-                      <th className="px-3.5 py-2 text-center">Son Durum</th>
-                      <th className="px-3.5 py-2">Abone Adı</th>
-                      <th className="px-3.5 py-2">Sektör</th>
+                      <td colSpan={9} className="text-center py-12 text-slate-500 text-xs">
+                        Filtrelere uygun servis kutusu bulunamadı.
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-700/25">
-                    {filteredList.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="text-center py-12 text-slate-500 text-xs">
-                          Filtrelere uygun servis kutusu bulunamadı.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredList.map((box, idx) => (
+                  ) : (
+                    paginatedList.map((box, idx) => {
+                      const phoneVal = getBoxPhone(box);
+                      return (
                         <tr
                           key={box.id}
                           className={`hover:bg-slate-700/20 transition-colors ${
                             idx % 2 === 0 ? '' : 'bg-slate-800/20'
                           }`}
                         >
-                          <td className="px-3.5 py-2 font-bold text-slate-100 whitespace-nowrap">
+                          <td className="px-1.5 py-1 font-bold text-slate-100 truncate" title={box.connectionObject}>
                             {box.connectionObject}
                           </td>
-                          <td className="px-3.5 py-2 text-slate-400 truncate max-w-[180px]" title={box.address}>
+                          <td className="px-1.5 py-1 text-slate-400 truncate" title={box.address}>
                             {box.address || '—'}
                           </td>
-                          <td className="px-3.5 py-2 text-slate-300 whitespace-nowrap">
-                            {box.district} <span className="text-slate-500 text-[10.5px]">/ {box.neighborhood}</span>
+                          <td className="px-1.5 py-1 text-slate-300 truncate" title={`${box.district} / ${box.neighborhood}`}>
+                            {box.district} <span className="text-slate-500 text-[8.5px]">/ {box.neighborhood}</span>
                           </td>
-                          <td className="px-3.5 py-2 text-center whitespace-nowrap">
+                          <td className="px-1.5 py-1 text-center text-slate-400 truncate" title={box.agreementDate}>
+                            {box.agreementDate || '—'}
+                          </td>
+                          <td className="px-1.5 py-1 text-center truncate">
                             <span
-                              className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                              className={`inline-flex px-1 py-0.2 rounded text-[8.5px] font-bold border ${
                                 box.waitingDays >= 90
                                   ? 'bg-red-500/20 text-red-300 border-red-500/30'
                                   : box.waitingDays >= 60
-                                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                                  : 'bg-slate-700/50 text-slate-300 border-slate-600/30'
+                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                    : 'bg-slate-700/50 text-slate-300 border-slate-600/30'
                               }`}
                             >
-                              {box.waitingDays} Gün
+                              {box.waitingDays} G
                             </span>
                           </td>
-                          <td className="px-3.5 py-2 text-center whitespace-nowrap">
+                          <td className="px-1.5 py-1 text-center truncate">
                             <span
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${
+                              className={`inline-flex px-1 py-0.2 rounded text-[8.5px] font-semibold border ${
                                 !box.lastStatus
                                   ? 'bg-amber-500/15 text-amber-300 border-amber-500/25'
                                   : 'bg-blue-500/15 text-blue-300 border-blue-500/25'
@@ -672,163 +666,86 @@ export default function QRManagementPage() {
                               {box.lastStatus || 'Boş'}
                             </span>
                           </td>
-                          <td className="px-3.5 py-2 text-slate-300 truncate max-w-[120px]">
+                          <td className="px-1.5 py-1 text-slate-300 truncate" title={box.name}>
                             {box.name || '—'}
                           </td>
-                          <td className="px-3.5 py-2 text-slate-400 whitespace-nowrap text-[10.5px]">
+                          <td className="px-1.5 py-1 text-slate-300 truncate text-[8.5px]" title={phoneVal || 'Telefon Bilgisi Yok'}>
+                            {phoneVal ? (
+                              <span className="inline-flex items-center gap-1 text-slate-200">
+                                <Phone className="h-2.5 w-2.5 shrink-0 text-blue-400" />
+                                <span className="truncate">{phoneVal}</span>
+                              </span>
+                            ) : (
+                              <span className="text-slate-600">—</span>
+                            )}
+                          </td>
+                          <td className="px-1.5 py-1 text-slate-400 truncate text-[8.5px]" title={box.sectorInfo || box.sectorRegionInfo}>
                             {box.sectorInfo || box.sectorRegionInfo || '—'}
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls Bar */}
+            <div className="px-3 py-1.5 border-t border-slate-700/40 flex items-center justify-between text-[10.5px] text-slate-400 shrink-0 bg-slate-900/60">
+              <div className="flex items-center gap-1">
+                <span>
+                  Toplam <strong className="text-slate-200">{filteredList.length}</strong> kayıttan{' '}
+                  <strong className="text-slate-200">
+                    {filteredList.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}-
+                    {Math.min(currentPage * pageSize, filteredList.length)}
+                  </strong>{' '}
+                  arası
+                </span>
               </div>
 
-              {/* Mobilde Kart Görünümü (block sm:hidden) */}
-              <div className="block sm:hidden divide-y divide-slate-800 max-h-[360px] overflow-y-auto">
-                {filteredList.length === 0 ? (
-                  <div className="p-6 text-center text-slate-500 text-xs">
-                    Filtrelere uygun servis kutusu bulunamadı.
-                  </div>
-                ) : (
-                  filteredList.map((box) => (
-                    <div key={box.id} className="p-3 space-y-1.5 hover:bg-slate-800/30 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-white text-xs">{box.connectionObject}</span>
-                        <div className="flex items-center gap-1">
-                          <span
-                            className={`px-1.5 py-0.5 rounded text-[9.5px] font-bold border ${
-                              box.waitingDays >= 90
-                                ? 'bg-red-500/20 text-red-300 border-red-500/30'
-                                : 'bg-slate-700/60 text-slate-300 border-slate-600/30'
-                            }`}
-                          >
-                            {box.waitingDays} Gün
-                          </span>
-                          <span className="px-1.5 py-0.5 rounded text-[9.5px] font-semibold bg-blue-500/15 text-blue-300 border border-blue-500/25">
-                            {box.lastStatus || 'Boş'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="text-[10.5px] text-slate-400 leading-snug">
-                        {box.district} / {box.neighborhood} — {box.address}
-                      </div>
-
-                      {box.name && (
-                        <div className="text-[10.5px] text-slate-300 font-medium flex items-center gap-1">
-                          <User className="h-3 w-3 text-slate-500" />
-                          <span>{box.name}</span>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            </GlassCard>
-
-          </div>
-
-          {/* Sağ Kolon - QR Önizleme & Saha Ekibine Sevk (1 Kolon) */}
-          <div className="xl:col-span-1">
-            {generatedQR ? (
-              <GlassCard className="sticky top-20 border-blue-500/40 bg-gradient-to-b from-slate-900/90 to-blue-950/20 shadow-2xl">
-                <CardHeader
-                  icon={QrCode}
-                  iconColor="text-blue-400"
-                  iconBg="bg-blue-500/15"
-                  title="Oluşturulan QR İş Emri"
-                  subtitle={generatedQR.id}
-                />
-
-                <div className="p-4 sm:p-5 flex flex-col items-center">
-                  {/* QR Box with Glowing Cyber Frame */}
-                  <div className="relative p-3 rounded-xl bg-white shadow-xl shadow-blue-500/15 mb-4">
-                    <QRCodeSVG
-                      value={`/saha/qr-listesi/${generatedQR.id}`}
-                      size={160}
-                      level="H"
-                      includeMargin={false}
-                    />
-                    {/* Cyber corner accents */}
-                    <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-blue-600 rounded-tl -translate-x-1 -translate-y-1" />
-                    <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-blue-600 rounded-tr translate-x-1 -translate-y-1" />
-                    <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-blue-600 rounded-bl -translate-x-1 translate-y-1" />
-                    <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-blue-600 rounded-br translate-x-1 translate-y-1" />
-                  </div>
-
-                  {/* Summary Details */}
-                  <div className="w-full rounded-xl bg-slate-900/80 border border-slate-700/50 p-3 space-y-2 text-xs">
-                    <div className="flex justify-between items-center pb-1.5 border-b border-slate-800">
-                      <span className="text-slate-400">Atanan Kutu:</span>
-                      <span className="font-bold text-white">{generatedQR.serviceBoxIds.length} Servis Kutusu</span>
-                    </div>
-
-                    <div className="flex justify-between items-center pb-1.5 border-b border-slate-800">
-                      <span className="text-slate-400">İlçeler:</span>
-                      <span className="font-bold text-slate-200 text-right truncate max-w-[140px]">
-                        {generatedQR.filters.districts.length > 0 ? generatedQR.filters.districts.join(', ') : 'Tümü'}
-                      </span>
-                    </div>
-
-                    {(generatedQR.filters as any).over90Days && (
-                      <div className="flex justify-between items-center pb-1.5 border-b border-slate-800">
-                        <span className="text-slate-400">Bekleme Sınırı:</span>
-                        <span className="font-bold text-red-400">&gt; 90 Gün (Acil)</span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-between items-center pb-1.5 border-b border-slate-800">
-                      <span className="text-slate-400">Son Durum:</span>
-                      <span className="font-bold text-slate-200">
-                        {generatedQR.filters.lastStatus === 'EMPTY' ? 'Boş' : generatedQR.filters.lastStatus === 'OTHER' ? 'Diğer' : 'Tümü'}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Oluşturuldu:</span>
-                      <span className="font-medium text-slate-300">
-                        {new Date(generatedQR.createdAt).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Send Button */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px]">
+                  Sayfa <strong className="text-slate-200">{currentPage}</strong> / {totalPages}
+                </span>
+                <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    onClick={() => setSendDialogOpen(true)}
-                    className="w-full mt-4 py-2.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:to-indigo-500 shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 active:scale-98 transition-all"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="p-1 rounded bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="Önceki Sayfa"
                   >
-                    <Send className="h-3.5 w-3.5" />
-                    SAHA EKİBİNE GÖNDER
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages}
+                    className="p-1 rounded bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="Sonraki Sayfa"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
                   </button>
                 </div>
-              </GlassCard>
-            ) : (
-              <GlassCard className="sticky top-20 border-dashed border-2 border-slate-700/60 bg-slate-900/30 p-6 flex flex-col items-center justify-center text-center h-[380px]">
-                <div className="w-12 h-12 rounded-xl bg-slate-800/80 border border-slate-700/50 flex items-center justify-center mb-3">
-                  <QrCode className="h-6 w-6 text-slate-500" />
-                </div>
-                <h3 className="text-sm font-bold text-slate-200 mb-1.5">QR Henüz Oluşturulmadı</h3>
-                <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed">
-                  Soldaki panelden filtre kriterlerini belirleyip <strong className="text-slate-300">"QR Kod Oluştur"</strong> butonuna bastığınızda, saha ekiplerinin okutabileceği dijital iş paketi burada belirecektir.
-                </p>
-              </GlassCard>
-            )}
-          </div>
+              </div>
+            </div>
+          </GlassCard>
         </div>
 
-        {/* ══ 4. SAHA EKİBİNE SEVK DİALOG (DARK GLASSMORPHISM) ═════════ */}
+      </div>
+
+
+
+        {/* ══ 5. SAHA EKİBİNE SEVK DİALOG (DARK GLASSMORPHISM) ═════════ */}
         <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
           <DialogContent className="max-w-xl bg-slate-900/95 border border-slate-700/60 backdrop-blur-xl text-slate-100 p-6 rounded-2xl shadow-2xl">
             <DialogHeader>
               <DialogTitle className="text-xl font-black text-white flex items-center gap-2">
                 <Send className="h-5 w-5 text-blue-400" />
-                QR İş Emrini Saha Ekibine Sevk Et
+                İş Emrini Saha Ekibine Sevk Et
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-400 mt-1">
-                Filtrelediğiniz <span className="text-blue-300 font-bold">{generatedQR?.serviceBoxIds.length} servis kutusu</span> hangi saha ekibine yönlendirilsin?
+                Filtrelediğiniz <span className="text-blue-300 font-bold">{filteredList.length} servis kutusu</span> hangi saha ekibine yönlendirilsin?
               </DialogDescription>
             </DialogHeader>
 
@@ -845,11 +762,10 @@ export default function QRManagementPage() {
                       key={team.id}
                       type="button"
                       onClick={() => setSelectedTeamId(team.id)}
-                      className={`p-3.5 rounded-xl border text-left transition-all relative ${
-                        isSelected
-                          ? 'border-blue-500 bg-blue-500/20 shadow-md shadow-blue-500/20'
-                          : 'border-slate-800 bg-slate-800/50 hover:border-slate-700 hover:bg-slate-800'
-                      }`}
+                      className={`p-3.5 rounded-xl border text-left transition-all relative ${isSelected
+                        ? 'border-blue-500 bg-blue-500/20 shadow-md shadow-blue-500/20'
+                        : 'border-slate-800 bg-slate-800/50 hover:border-slate-700 hover:bg-slate-800'
+                        }`}
                     >
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="font-bold text-sm text-white">{team.code}</span>
@@ -894,8 +810,6 @@ export default function QRManagementPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
       </div>
-    </div>
-  );
-}
+    );
+  }

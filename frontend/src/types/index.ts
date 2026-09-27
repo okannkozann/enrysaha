@@ -57,6 +57,20 @@ export interface ServiceBox {
   extraFields?: Record<string, string>;
 }
 
+export interface Complaint {
+  id: string;
+  complaintType: string;
+  address: string;
+  name: string;
+  contact: string;
+  receivedDate: string; // YYYY-MM-DD
+  plannedDate: string;  // YYYY-MM-DD
+  repeatCount: number;
+  status?: 'Açık' | 'Planlandı' | 'Tamamlandı' | 'Kapatıldı';
+  notes?: string;
+  extraFields?: Record<string, any>;
+}
+
 export interface EneryaEmployee {
   id: string;
   name: string;
