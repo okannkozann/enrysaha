@@ -13,6 +13,14 @@ export interface User {
   teamName?: string;
 }
 
+export interface MetropolitanRoad {
+  id: string;
+  roadName: string;
+  district?: string;
+  notes?: string;
+  updatedAt?: string;
+}
+
 export interface WorkSession {
   id: string;
   teamId: string;

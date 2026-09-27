@@ -1,0 +1,135 @@
+[
+  {
+    "id": "KAŞ",
+    "name": "KAŞ",
+    "labelX": 100,
+    "labelY": 455,
+    "isInvestmentDistrict": false
+  },
+  {
+    "id": "DEMRE",
+    "name": "DEMRE",
+    "labelX": 165,
+    "labelY": 475,
+    "isInvestmentDistrict": false
+  },
+  {
+    "id": "FİNİKE",
+    "name": "FİNİKE",
+    "labelX": 235,
+    "labelY": 470,
+    "isInvestmentDistrict": false
+  },
+  {
+    "id": "ELMALI",
+    "name": "ELMALI",
+    "labelX": 170,
+    "labelY": 325,
+    "isInvestmentDistrict": false
+  },
+  {
+    "id": "KUMLUCA",
+    "name": "KUMLUCA",
+    "labelX": 295,
+    "labelY": 390,
+    "isInvestmentDistrict": false
+  },
+  {
+    "id": "KEMER",
+    "name": "KEMER",
+    "labelX": 355,
+    "labelY": 350,
+    "isInvestmentDistrict": false
+  },
+  {
+    "id": "KORKUTELİ",
+    "name": "KORKUTELİ",
+    "labelX": 275,
+    "labelY": 180,
+    "isInvestmentDistrict": true
+  },
+  {
+    "id": "DÖŞEMEALTI",
+    "name": "DÖŞEMEALTI",
+    "labelX": 375,
+    "labelY": 160,
+    "isInvestmentDistrict": true
+  },
+  {
+    "id": "KONYAALTI",
+    "name": "KONYAALTI",
+    "labelX": 355,
+    "labelY": 275,
+    "isInvestmentDistrict": true
+  },
+  {
+    "id": "KEPEZ",
+    "name": "KEPEZ",
+    "labelX": 420,
+    "labelY": 215,
+    "isInvestmentDistrict": true
+  },
+  {
+    "id": "MURATPAŞA",
+    "name": "MURATPAŞA",
+    "labelX": 420,
+    "labelY": 275,
+    "isInvestmentDistrict": true
+  },
+  {
+    "id": "AKSU",
+    "name": "AKSU",
+    "labelX": 485,
+    "labelY": 220,
+    "isInvestmentDistrict": true
+  },
+  {
+    "id": "SERİK",
+    "name": "SERİK",
+    "labelX": 565,
+    "labelY": 220,
+    "isInvestmentDistrict": true
+  },
+  {
+    "id": "MANAVGAT",
+    "name": "MANAVGAT",
+    "labelX": 660,
+    "labelY": 245,
+    "isInvestmentDistrict": true
+  },
+  {
+    "id": "İBRADI",
+    "name": "İBRADI",
+    "labelX": 650,
+    "labelY": 135,
+    "isInvestmentDistrict": false
+  },
+  {
+    "id": "AKSEKİ",
+    "name": "AKSEKİ",
+    "labelX": 745,
+    "labelY": 155,
+    "isInvestmentDistrict": false
+  },
+  {
+    "id": "GÜNDOĞMUŞ",
+    "name": "GÜNDOĞMUŞ",
+    "labelX": 765,
+    "labelY": 275,
+    "isInvestmentDistrict": false
+  },
+  {
+    "id": "ALANYA",
+    "name": "ALANYA",
+    "labelX": 790,
+    "labelY": 410,
+    "isInvestmentDistrict": true
+  },
+  {
+    "id": "GAZİPAŞA",
+    "name": "GAZİPAŞA",
+    "labelX": 885,
+    "labelY": 410,
+    "isInvestmentDistrict": false
+  }
+]

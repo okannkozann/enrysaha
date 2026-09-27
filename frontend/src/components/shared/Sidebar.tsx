@@ -9,7 +9,9 @@ import {
   FileText, 
   Settings, 
   QrCode,
-  CheckSquare
+  CheckSquare,
+  FileCheck,
+  TrendingUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
@@ -23,10 +25,12 @@ export function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
     { name: 'Dashboard', href: '/yapim/dashboard', icon: LayoutDashboard },
     { name: 'Servis Kutuları', href: '/yapim/service-boxes', icon: Box },
     { name: 'Saha Bildirimleri', href: '/yapim/field-reports', icon: CheckSquare },
+    { name: 'Büyükşehir Yetki Kontrolü', href: '/yapim/excavation-permits', icon: FileCheck },
     { name: 'Ekipler', href: '/yapim/teams', icon: Users },
     { name: 'Operasyon Haritası', href: '/yapim/map', icon: MapIcon },
     { name: 'QR Yönetimi', href: '/yapim/qr', icon: QrCode },
-    { name: 'Raporlar', href: '/yapim/reports', icon: FileText },
+    { name: 'Yatırım İzleme', href: '/yapim/reports', icon: TrendingUp },
+    { name: 'Yatırım İzleme (Harita)', href: '/yapim/investment-map', icon: MapIcon },
   ];
 
   const links = officeLinks;

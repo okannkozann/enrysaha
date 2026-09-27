@@ -5,17 +5,18 @@ import { useRouter, usePathname } from 'next/navigation';
 import {
   Menu, X, LogOut, LayoutDashboard, Box,
   CheckSquare, Users, Map as MapIcon, QrCode,
-  FileText, Shield, ChevronRight
+  FileText, Shield, ChevronRight, FileCheck, TrendingUp
 } from 'lucide-react';
 
 const MODULE_LINKS = [
-  { name: 'Dashboard',         href: '/yapim/dashboard',     icon: LayoutDashboard },
-  { name: 'Servis Kutuları',   href: '/yapim/service-boxes', icon: Box },
-  { name: 'Saha Bildirimleri', href: '/yapim/field-reports', icon: CheckSquare },
-  { name: 'Ekipler',           href: '/yapim/teams',         icon: Users },
-  { name: 'Operasyon Haritası',href: '/yapim/map',           icon: MapIcon },
-  { name: 'QR Yönetimi',       href: '/yapim/qr',            icon: QrCode },
-  { name: 'Raporlar',          href: '/yapim/reports',       icon: FileText },
+  { name: 'Dashboard',         href: '/yapim/dashboard',          icon: LayoutDashboard },
+  { name: 'Servis Kutuları',   href: '/yapim/service-boxes',      icon: Box },
+  { name: 'Saha Bildirimleri', href: '/yapim/field-reports',      icon: CheckSquare },
+  { name: 'Büyükşehir Yetki Kontrolü', href: '/yapim/excavation-permits', icon: FileCheck },
+  { name: 'Ekipler',           href: '/yapim/teams',              icon: Users },
+  { name: 'Operasyon Haritası',href: '/yapim/map',                icon: MapIcon },
+  { name: 'QR Yönetimi',       href: '/yapim/qr',                 icon: QrCode },
+  { name: 'Yatırım İzleme',    href: '/yapim/reports',            icon: TrendingUp },
 ];
 
 export function Header() {

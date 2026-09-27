@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {
   AlertTriangle, MapPin, ShieldAlert,
   Users, Activity, Zap, ChevronRight,
-  QrCode, RefreshCw, LayoutDashboard, Radio
+  QrCode, RefreshCw, LayoutDashboard, Radio, FileCheck, TrendingUp
 } from 'lucide-react';
 import { KPICards, ExtendedDashboardKPIs } from '@/components/dashboard/KPICards';
 import { TeamStatus } from '@/components/dashboard/TeamStatus';
@@ -271,6 +271,13 @@ export default function DashboardPage() {
           {/* Quick Module Shortcut Buttons */}
           <div className="flex flex-wrap items-center gap-2">
             <Link
+              href="/yapim/excavation-permits"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all shadow-sm"
+            >
+              <FileCheck className="h-3.5 w-3.5 text-emerald-400" />
+              Büyükşehir Yetki Kontrolü →
+            </Link>
+            <Link
               href="/yapim/map"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800/80 border border-slate-700/50 hover:bg-slate-700/80 hover:text-white transition-all shadow-sm"
             >
@@ -285,11 +292,18 @@ export default function DashboardPage() {
               QR İş Emri ({qrPackages.length})
             </Link>
             <Link
+              href="/yapim/reports"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-blue-300 bg-blue-500/15 border border-blue-500/30 hover:bg-blue-500/25 transition-all shadow-sm"
+            >
+              <TrendingUp className="h-3.5 w-3.5 text-blue-400" />
+              Yatırım İzleme →
+            </Link>
+            <Link
               href="/yapim/field-reports"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800/80 border border-slate-700/50 hover:bg-slate-700/80 hover:text-white transition-all shadow-sm"
             >
               <Zap className="h-3.5 w-3.5 text-amber-400" />
-              Raporlar ({reports.length})
+              Saha Bildirimleri ({reports.length})
             </Link>
             <button
               onClick={loadData}
