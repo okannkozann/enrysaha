@@ -32,10 +32,10 @@ interface DistrictMeta {
 }
 
 // ─── SVG Viewport (Zoomed in on 19 districts) ─────────────────────────────────
-const VX = 40;
-const VY = 30;
-const VW = 920;
-const VH = 515;
+const VX = 65;
+const VY = 35;
+const VW = 840;
+const VH = 450;
 
 // ─── Helper to parse district metadata into a map keyed by ID ─────────────────
 function parseMetaMap(): Record<string, DistrictMeta> {

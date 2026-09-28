@@ -13,16 +13,12 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { InvestmentRecord } from '@/lib/mock-data/investmentData';
 import { investmentService } from '@/lib/services/investmentService';
 import { AntalyaInvestmentMap } from '@/components/investment-map/AntalyaInvestmentMap';
-import { MapBottomStatsCard, RightDashboardPanel } from '@/components/investment-map/InvestmentMapDashboardStats';
+import {
+  MapBottomStatsCard,
+  RightDashboardPanel,
+  ModernDistrictNeighborhoodPieChartCard,
+} from '@/components/investment-map/InvestmentMapDashboardStats';
 import { MapSelection } from '@/components/investment-map/types';
-import { Map, Layers, RotateCcw } from 'lucide-react';
-import districtMeta from '@/lib/mock-data/antalyaDistricts.json';
-
-const ALL_DISTRICTS = [
-  'KAŞ', 'DEMRE', 'FİNİKE', 'ELMALI', 'KUMLUCA', 'KEMER', 'KORKUTELİ', 
-  'KONYAALTI', 'DÖŞEMEALTI', 'KEPEZ', 'MURATPAŞA', 'AKSU', 'SERİK', 
-  'İBRADI', 'MANAVGAT', 'AKSEKİ', 'GÜNDOĞMUŞ', 'ALANYA', 'GAZİPAŞA'
-];
 
 export default function InvestmentMapPage() {
   const [records, setRecords] = useState<InvestmentRecord[]>([]);
@@ -40,7 +36,7 @@ export default function InvestmentMapPage() {
   }, []);
 
   // ── Handlers ──
-  const handleDistrictClick = useCallback((districtKey: string) => {
+  const handleDistrictClick = useCallback((districtKey: string | undefined) => {
     setSelection({ district: districtKey, neighborhood: undefined });
   }, []);
 
@@ -73,7 +69,7 @@ export default function InvestmentMapPage() {
   }
 
   return (
-    <div className="relative flex flex-col h-full bg-slate-950 text-slate-100 overflow-y-auto lg:overflow-hidden font-sans p-2.5 sm:p-4 gap-3 sm:gap-4 selection:bg-blue-500/30">
+    <div className="relative flex flex-col h-full w-full bg-slate-950 text-slate-100 overflow-hidden font-sans p-2.5 sm:p-3 gap-2.5 sm:gap-3 selection:bg-blue-500/30">
 
       {/* ── Ambient Background Lighting ── */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -83,17 +79,15 @@ export default function InvestmentMapPage() {
         <div className="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:28px_28px] opacity-15" />
       </div>
 
-      {/* ── Main Dashboard Layout Grid ── */}
-      <div className="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 lg:overflow-hidden min-h-0">
+      {/* ── Main Dashboard Layout Grid (4-Quadrant Executive Architecture) ── */}
+      <div className="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-3 overflow-hidden min-h-0 w-full h-full max-w-[1850px] mx-auto">
 
-        {/* ── LEFT COLUMN (7/12 width on desktop): Map + Bottom Stats ── */}
-        <div className="lg:col-span-7 flex flex-col gap-3 sm:gap-4 lg:overflow-hidden h-auto lg:h-full min-h-0">
+        {/* ── LEFT COLUMN (7/12 width): Map (Top) + Metraj Profili (Bottom) ── */}
+        <div className="lg:col-span-7 flex flex-col gap-2.5 sm:gap-3 overflow-hidden h-full min-h-0">
 
-          {/* 1. Top Card: Map Container */}
-          <div className="relative flex-1 min-h-[260px] sm:min-h-[280px] lg:min-h-[200px] bg-slate-900/80 backdrop-blur-xl rounded-xl border border-slate-800/90 shadow-2xl overflow-hidden flex flex-col">
-
-            {/* SVG Map Engine */}
-            <div className="flex-1 w-full h-full min-h-[240px]">
+          {/* 1. Map Container (Top-Left) */}
+          <div className="relative flex-[1.2] min-h-0 bg-slate-900/80 backdrop-blur-xl rounded-xl border border-slate-800/90 shadow-2xl overflow-hidden flex flex-col">
+            <div className="flex-1 w-full h-full min-h-0">
               <AntalyaInvestmentMap
                 geometryLayer={{ source: 'HGM-2025', districts: [] }}
                 selection={selection}
@@ -104,21 +98,31 @@ export default function InvestmentMapPage() {
             </div>
           </div>
 
-          {/* 2. Bottom Card: Yatırım Gerçekleşme Metraj Profili Alanı */}
-          <div className="h-auto md:h-80 lg:h-[330px] flex-shrink-0">
+          {/* 2. Metraj Profili Card (Bottom-Left) */}
+          <div className="flex-1 min-h-0 overflow-hidden">
             <MapBottomStatsCard records={records} selection={selection} />
           </div>
 
         </div>
 
-        {/* ── RIGHT COLUMN (5/12 width on desktop): Executive Dashboard Panel ── */}
-        <div className="lg:col-span-5 h-auto lg:h-full lg:overflow-hidden">
-          <RightDashboardPanel
-            records={records}
-            selection={selection}
-            onDistrictSelect={handleDistrictClick}
-            onNeighborhoodSelect={handleNeighborhoodClick}
-          />
+        {/* ── RIGHT COLUMN (5/12 width): İlçe Yatırım Tablosu (Top) + İmalat Pastası (Bottom) ── */}
+        <div className="lg:col-span-5 flex flex-col gap-2.5 sm:gap-3 overflow-hidden h-full min-h-0">
+
+          {/* 3. İlçe Bazlı Yatırım Özeti Panel (Top-Right) */}
+          <div className="flex-[1.4] min-h-0 overflow-hidden">
+            <RightDashboardPanel
+              records={records}
+              selection={selection}
+              onDistrictSelect={handleDistrictClick}
+              onNeighborhoodSelect={handleNeighborhoodClick}
+            />
+          </div>
+
+          {/* 4. Antalya Geneli İlçe İmalat Dağılım Pastası Card (Bottom-Right) */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <ModernDistrictNeighborhoodPieChartCard records={records} selection={selection} />
+          </div>
+
         </div>
 
       </div>
