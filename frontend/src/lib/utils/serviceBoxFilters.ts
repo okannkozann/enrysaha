@@ -3,6 +3,8 @@ import { ServiceBox } from '@/types';
 export interface QRFilters {
   lastStatus: "EMPTY" | "OTHER" | null;
   districts: string[];
+  neighborhoods?: string[];
+  sectors?: string[];
   sort: "ASC" | "DESC" | null;
   over90Days?: boolean;
 }
@@ -18,8 +20,21 @@ export function filterServiceBoxesForQR(boxes: ServiceBox[], filters: QRFilters)
     }
 
     // İlçe mantığı (districts boş ise tümü geçerli)
-    if (filters.districts.length > 0 && (!box.district || !filters.districts.includes(box.district))) {
+    if (filters.districts && filters.districts.length > 0 && (!box.district || !filters.districts.includes(box.district))) {
       return false;
+    }
+
+    // Mahalle mantığı (neighborhoods boş ise tümü geçerli)
+    if (filters.neighborhoods && filters.neighborhoods.length > 0 && (!box.neighborhood || !filters.neighborhoods.includes(box.neighborhood))) {
+      return false;
+    }
+
+    // Sektör mantığı (sectors boş ise tümü geçerli)
+    if (filters.sectors && filters.sectors.length > 0) {
+      const sectorVal = box.sectorInfo || box.sectorRegionInfo;
+      if (!sectorVal || !filters.sectors.includes(sectorVal)) {
+        return false;
+      }
     }
     
     // > 90 Gün Filtresi

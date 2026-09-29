@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { InvestmentRecord } from '@/lib/mock-data/investmentData';
-import { investmentService, NeighborhoodInvestmentSummary } from '@/lib/services/investmentService';
+import { investmentService, NeighborhoodInvestmentSummary, normalizeKey } from '@/lib/services/investmentService';
 import { MapSelection } from './types';
 import {
   PieChart,
@@ -15,7 +15,7 @@ import {
   YAxis,
   Tooltip,
 } from 'recharts';
-import { Activity, MapPin, TrendingUp, CheckCircle2, Clock, AlertCircle, Layers } from 'lucide-react';
+import { Activity, MapPin, TrendingUp, CheckCircle2, Clock, AlertCircle, Layers, X } from 'lucide-react';
 
 interface Props {
   records: InvestmentRecord[];
@@ -240,15 +240,18 @@ export function MapBottomStatsCard({ records, selection }: { records: Investment
 /**
  * Subcomponent: Medium-Sized Modern Neighborhoods & Districts Donut Pie Chart Component (Standalone Card)
  * Shows slice breakdown of Mahalles for selected district (or İlçes for Antalya Geneli).
+ * When a neighborhood is selected, dynamically displays that neighborhood's specific imalat & metraj data.
  */
 export function ModernDistrictNeighborhoodPieChartCard({
   records,
   selection,
+  onNeighborhoodSelect,
 }: {
   records: InvestmentRecord[];
   selection: MapSelection;
+  onNeighborhoodSelect?: (neighborhood: string | undefined) => void;
 }) {
-  const { district } = selection;
+  const { district, neighborhood } = selection;
 
   // Rich vibrant palette for pie slices
   const SLICE_COLORS = [
@@ -257,9 +260,50 @@ export function ModernDistrictNeighborhoodPieChartCard({
     '#0284c7', '#22c55e', '#eab308', '#d946ef', '#64748b',
   ];
 
+  // Specific record for selected neighborhood
+  const selectedNeighborhoodRecord = useMemo(() => {
+    if (!neighborhood) return null;
+    return (
+      records.find(
+        (r) =>
+          normalizeKey(r.neighborhood) === normalizeKey(neighborhood) &&
+          (!district || normalizeKey(r.district) === normalizeKey(district))
+      ) || null
+    );
+  }, [records, district, neighborhood]);
+
   const chartData = useMemo(() => {
+    // 1. A specific neighborhood is selected -> display that neighborhood's Yapılan vs Kalan data
+    if (selectedNeighborhoodRecord) {
+      const rec = selectedNeighborhoodRecord;
+      const comp = rec.completed;
+      const rem = Math.max(0, rec.remaining);
+      const total = rec.totalPe;
+      const compRate = total > 0 ? (comp / total) * 100 : 0;
+      const remRate = total > 0 ? (rem / total) * 100 : 0;
+
+      return [
+        {
+          name: 'Yapılan (Tamamlanan)',
+          value: comp > 0 ? comp : 0.001,
+          completed: comp,
+          totalPlanned: total,
+          completionRate: compRate,
+          color: '#10b981',
+        },
+        {
+          name: 'Kalan İmalat',
+          value: rem > 0 ? rem : 0.001,
+          completed: rem,
+          totalPlanned: total,
+          completionRate: remRate,
+          color: '#f59e0b',
+        },
+      ];
+    }
+
+    // 2. A district is selected -> display all neighborhoods in that district
     if (district) {
-      // Neighborhoods breakdown for selected district
       const summaries = investmentService.getNeighborhoodSummaries(records, district);
       return summaries.map((n, i) => ({
         name: n.neighborhood,
@@ -270,37 +314,56 @@ export function ModernDistrictNeighborhoodPieChartCard({
         completionRate: n.completionRate,
         color: SLICE_COLORS[i % SLICE_COLORS.length],
       }));
-    } else {
-      // Districts breakdown for Antalya Geneli
-      const summaries = investmentService.getDistrictSummaries(records).sort((a, b) => b.completed - a.completed);
-      return summaries.map((d, i) => ({
-        name: d.district,
-        value: d.completed > 0 ? d.completed : d.totalPe > 0 ? 1 : 0,
-        totalPlanned: d.totalPe,
-        completed: d.completed,
-        remaining: d.remaining,
-        completionRate: d.completionRate,
-        color: SLICE_COLORS[i % SLICE_COLORS.length],
-      }));
     }
-  }, [records, district]);
 
-  const totalCompletedSum = useMemo(() => chartData.reduce((acc, d) => acc + d.completed, 0), [chartData]);
-  const totalPlannedSum = useMemo(() => chartData.reduce((acc, d) => acc + d.totalPlanned, 0), [chartData]);
+    // 3. Antalya Geneli -> display all districts
+    const summaries = investmentService.getDistrictSummaries(records).sort((a, b) => b.completed - a.completed);
+    return summaries.map((d, i) => ({
+      name: d.district,
+      value: d.completed > 0 ? d.completed : d.totalPe > 0 ? 1 : 0,
+      totalPlanned: d.totalPe,
+      completed: d.completed,
+      remaining: d.remaining,
+      completionRate: d.completionRate,
+      color: SLICE_COLORS[i % SLICE_COLORS.length],
+    }));
+  }, [records, district, selectedNeighborhoodRecord]);
+
+  const totalCompletedSum = useMemo(() => {
+    if (selectedNeighborhoodRecord) return selectedNeighborhoodRecord.completed;
+    return chartData.reduce((acc, d) => acc + d.completed, 0);
+  }, [selectedNeighborhoodRecord, chartData]);
+
+  const totalPlannedSum = useMemo(() => {
+    if (selectedNeighborhoodRecord) return selectedNeighborhoodRecord.totalPe;
+    return chartData.reduce((acc, d) => acc + d.totalPlanned, 0);
+  }, [selectedNeighborhoodRecord, chartData]);
+
   const overallRate = totalPlannedSum > 0 ? (totalCompletedSum / totalPlannedSum) * 100 : 0;
 
   return (
     <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800/90 rounded-xl p-2.5 sm:p-3 shadow-2xl flex flex-col justify-between h-full overflow-hidden text-slate-100">
       {/* Title Header */}
-      <div className="flex items-center justify-between flex-wrap gap-1.5 border-b border-slate-800/80 pb-1.5">
-        <div>
-          <h5 className="text-xs font-bold text-white flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-            {district ? `${district} Mahalle İmalat Dağılım Pastası` : 'Antalya Geneli İlçe İmalat Dağılım Pastası'}
+      <div className="flex items-center justify-between flex-wrap gap-1.5 border-b border-slate-800/80 pb-1.5 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <h5 className="text-xs font-bold text-white flex items-center gap-1.5 truncate">
+            <span
+              className={`w-2 h-2 rounded-full shrink-0 ${
+                selectedNeighborhoodRecord ? 'bg-emerald-400' : 'bg-blue-500'
+              } animate-pulse`}
+            />
+            <span className="truncate">
+              {selectedNeighborhoodRecord
+                ? `${selectedNeighborhoodRecord.neighborhood} İmalat Dağılımı`
+                : district
+                  ? `${district} Mahalle İmalat Dağılım Pastası`
+                  : 'Antalya Geneli İlçe İmalat Dağılım Pastası'}
+            </span>
           </h5>
         </div>
-        <span className="text-[9.5px] font-extrabold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30">
-          Genel Oran: %{overallRate.toFixed(1)}
+
+        <span className="text-[9.5px] font-extrabold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30 whitespace-nowrap shrink-0">
+          {selectedNeighborhoodRecord ? `Tamamlanma: %${overallRate.toFixed(1)}` : `Genel Oran: %${overallRate.toFixed(1)}`}
         </span>
       </div>
 
@@ -333,9 +396,17 @@ export function ModernDistrictNeighborhoodPieChartCard({
                           <MapPin className="w-3 h-3" /> {data.name}
                         </p>
                         <div className="text-[10px] font-mono space-y-0.5 text-slate-200">
-                          <p>Yapılan: <span className="text-emerald-400 font-bold">{fmt(data.completed)} m</span></p>
-                          <p>Planlanan: <span className="text-slate-300">{fmt(data.totalPlanned)} m</span></p>
-                          <p>Tamamlanma: <span className="text-amber-300 font-bold">%{data.completionRate.toFixed(1)}</span></p>
+                          <p>
+                            Metraj: <span className="text-emerald-400 font-bold">{fmt(data.completed || data.value)} m</span>
+                          </p>
+                          {data.totalPlanned > 0 && (
+                            <p>
+                              Toplam Planlanan: <span className="text-slate-300">{fmt(data.totalPlanned)} m</span>
+                            </p>
+                          )}
+                          <p>
+                            Oran: <span className="text-amber-300 font-bold">%{data.completionRate.toFixed(1)}</span>
+                          </p>
                         </div>
                       </div>
                     );
@@ -351,31 +422,125 @@ export function ModernDistrictNeighborhoodPieChartCard({
             <span className="text-xs sm:text-sm font-black text-white leading-none tabular-nums">
               {fmt(totalCompletedSum)} <span className="text-[8px] text-slate-400 font-normal">m</span>
             </span>
-            <span className="text-[8px] uppercase font-bold text-emerald-400 mt-1">Top. Yapılan</span>
+            <span className="text-[8px] uppercase font-bold text-emerald-400 mt-1">
+              {selectedNeighborhoodRecord ? `%${overallRate.toFixed(0)} Yapılan` : 'Top. Yapılan'}
+            </span>
           </div>
         </div>
 
-        {/* Right: District / Neighborhood Legend List (Alt Alta, Tam Sığacak Şekilde, No Scroll) */}
-        <div className="sm:col-span-7 flex flex-col justify-between h-full py-0.5 overflow-hidden">
-          {chartData.map((item, idx) => (
-            <div
-              key={idx}
-              className="flex items-center justify-between py-[1.5px] px-2 rounded hover:bg-slate-800/60 transition-colors text-[9px] sm:text-[9.5px] border border-transparent hover:border-slate-700/40"
-              title={`${item.name} - Yapılan: ${fmt(item.completed)} m (%${item.completionRate.toFixed(1)})`}
-            >
-              <div className="flex items-center gap-1.5 truncate mr-2 min-w-0">
-                <span className="w-2 h-2 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: item.color }} />
-                <span className="font-semibold text-slate-200 uppercase truncate tracking-tight text-[9px] sm:text-[9.5px]">{item.name}</span>
+        {/* Right: Detailed Legend List / Breakdown */}
+        {selectedNeighborhoodRecord ? (
+          <div className="sm:col-span-7 flex flex-col justify-around h-full py-0.5 gap-1 overflow-hidden">
+            {/* 1. Yapılan Metraj */}
+            <div className="flex items-center justify-between py-1 px-2 rounded bg-slate-800/50 border border-slate-700/40">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                <span className="font-semibold text-slate-200 text-[9.5px] sm:text-[10px] truncate">
+                  Yapılan (Tamamlanan)
+                </span>
               </div>
               <div className="flex items-center gap-1.5 font-mono shrink-0">
-                <span className="text-emerald-400 font-bold text-[9px] sm:text-[9.5px]">{fmt(item.completed)} m</span>
-                <span className="text-[7.5px] sm:text-[8px] font-extrabold text-blue-300 bg-blue-500/15 px-1 py-0.2 rounded border border-blue-500/25 min-w-[28px] text-center">
-                  %{item.completionRate.toFixed(0)}
+                <span className="text-emerald-400 font-bold text-[9.5px] sm:text-[10px]">
+                  {fmt(selectedNeighborhoodRecord.completed)} m
+                </span>
+                <span className="text-[7.5px] sm:text-[8px] font-extrabold text-emerald-300 bg-emerald-500/20 px-1 py-0.2 rounded border border-emerald-500/30">
+                  %{overallRate.toFixed(1)}
                 </span>
               </div>
             </div>
-          ))}
-        </div>
+
+            {/* 2. Kalan Metraj */}
+            <div className="flex items-center justify-between py-1 px-2 rounded bg-slate-800/50 border border-slate-700/40">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+                <span className="font-semibold text-slate-200 text-[9.5px] sm:text-[10px] truncate">Kalan Metraj</span>
+              </div>
+              <div className="flex items-center gap-1.5 font-mono shrink-0">
+                <span className="text-amber-400 font-bold text-[9.5px] sm:text-[10px]">
+                  {selectedNeighborhoodRecord.remaining < 0
+                    ? `(${fmt(Math.abs(selectedNeighborhoodRecord.remaining))}) m`
+                    : `${fmt(selectedNeighborhoodRecord.remaining)} m`}
+                </span>
+                <span className="text-[7.5px] sm:text-[8px] font-extrabold text-amber-300 bg-amber-500/20 px-1 py-0.2 rounded border border-amber-500/30">
+                  %{Math.max(0, 100 - overallRate).toFixed(1)}
+                </span>
+              </div>
+            </div>
+
+            {/* 3. PE 63 Şebeke */}
+            <div className="flex items-center justify-between py-1 px-2 rounded bg-slate-800/50 border border-slate-700/40">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
+                <span className="font-semibold text-slate-200 text-[9.5px] sm:text-[10px] truncate">PE 63 Şebeke Hattı</span>
+              </div>
+              <div className="flex items-center gap-1.5 font-mono shrink-0">
+                <span className="text-blue-400 font-bold text-[9.5px] sm:text-[10px]">
+                  {fmt(selectedNeighborhoodRecord.pe63)} m
+                </span>
+                <span className="text-[7.5px] sm:text-[8px] font-extrabold text-blue-300 bg-blue-500/20 px-1 py-0.2 rounded border border-blue-500/30">
+                  %{totalPlannedSum > 0 ? ((selectedNeighborhoodRecord.pe63 / totalPlannedSum) * 100).toFixed(0) : 0}
+                </span>
+              </div>
+            </div>
+
+            {/* 4. PE 125 Ana Besleme */}
+            <div className="flex items-center justify-between py-1 px-2 rounded bg-slate-800/50 border border-slate-700/40">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-purple-400 shrink-0" />
+                <span className="font-semibold text-slate-200 text-[9.5px] sm:text-[10px] truncate">PE 125 Ana Besleme</span>
+              </div>
+              <div className="flex items-center gap-1.5 font-mono shrink-0">
+                <span className="text-purple-400 font-bold text-[9.5px] sm:text-[10px]">
+                  {fmt(selectedNeighborhoodRecord.pe125)} m
+                </span>
+                <span className="text-[7.5px] sm:text-[8px] font-extrabold text-purple-300 bg-purple-500/20 px-1 py-0.2 rounded border border-purple-500/30">
+                  %{totalPlannedSum > 0 ? ((selectedNeighborhoodRecord.pe125 / totalPlannedSum) * 100).toFixed(0) : 0}
+                </span>
+              </div>
+            </div>
+
+            {/* 5. Toplam Planlanan Metraj */}
+            <div className="flex items-center justify-between py-0.5 px-2 text-[9px] text-slate-400 border-t border-slate-800/60 pt-1">
+              <span className="font-semibold uppercase tracking-wider text-[8.5px]">Toplam Planlanan PE</span>
+              <span className="font-mono font-bold text-white text-[9.5px]">
+                {fmt(selectedNeighborhoodRecord.totalPe)} m
+              </span>
+            </div>
+          </div>
+        ) : (
+          /* Normal District / Antalya list */
+          <div className="sm:col-span-7 flex flex-col justify-between h-full py-0.5 overflow-hidden">
+            {chartData.map((item, idx) => (
+              <div
+                key={idx}
+                onClick={() => {
+                  if (district && onNeighborhoodSelect) {
+                    onNeighborhoodSelect(item.name);
+                  }
+                }}
+                className={`flex items-center justify-between py-[1.5px] px-2 rounded hover:bg-slate-800/60 transition-colors text-[9px] sm:text-[9.5px] border border-transparent hover:border-slate-700/40 ${
+                  district ? 'cursor-pointer' : ''
+                }`}
+                title={`${item.name} - Yapılan: ${fmt(item.completed)} m (%${item.completionRate.toFixed(1)})${
+                  district ? ' - Detay için tıklayın' : ''
+                }`}
+              >
+                <div className="flex items-center gap-1.5 truncate mr-2 min-w-0">
+                  <span className="w-2 h-2 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: item.color }} />
+                  <span className="font-semibold text-slate-200 uppercase truncate tracking-tight text-[9px] sm:text-[9.5px]">
+                    {item.name}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 font-mono shrink-0">
+                  <span className="text-emerald-400 font-bold text-[9px] sm:text-[9.5px]">{fmt(item.completed)} m</span>
+                  <span className="text-[7.5px] sm:text-[8px] font-extrabold text-blue-300 bg-blue-500/15 px-1 py-0.2 rounded border border-blue-500/25 min-w-[28px] text-center">
+                    %{item.completionRate.toFixed(0)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

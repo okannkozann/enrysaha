@@ -258,14 +258,9 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-xl font-bold text-slate-100 tracking-tight">SAHA YAPIM & OPERASYON MERKEZİ</h1>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold text-blue-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
-                Canlı Saha Sync
-              </span>
+              
             </div>
-            <p className="text-xs text-slate-400">
-              Antalya Bölgesi • Servis kutusu SLA takibi, EPDK yasal limitleri ve canlı saha aksiyonları
-            </p>
+            
           </div>
 
 

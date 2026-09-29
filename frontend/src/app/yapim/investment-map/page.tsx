@@ -120,7 +120,11 @@ export default function InvestmentMapPage() {
 
           {/* 4. Antalya Geneli İlçe İmalat Dağılım Pastası Card (Bottom-Right) */}
           <div className="flex-1 min-h-0 overflow-hidden">
-            <ModernDistrictNeighborhoodPieChartCard records={records} selection={selection} />
+            <ModernDistrictNeighborhoodPieChartCard
+              records={records}
+              selection={selection}
+              onNeighborhoodSelect={handleNeighborhoodClick}
+            />
           </div>
 
         </div>

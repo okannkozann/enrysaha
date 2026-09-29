@@ -140,9 +140,12 @@ export interface QRPackage {
   id: string;
   createdAt: string;
   filters: {
-    lastStatus: "EMPTY" | "OTHER";
+    lastStatus?: "EMPTY" | "OTHER" | null;
     districts: string[];
-    sort: "ASC" | "DESC";
+    neighborhoods?: string[];
+    sectors?: string[];
+    sort?: "ASC" | "DESC" | null;
+    over90Days?: boolean;
   };
   serviceBoxIds: string[];
   assignedTeamId?: string;
