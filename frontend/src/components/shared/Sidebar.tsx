@@ -15,7 +15,8 @@ import {
   Building2,
   ChevronDown,
   ChevronRight,
-  MessageSquareWarning
+  MessageSquareWarning,
+  Flame
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -43,6 +44,7 @@ export function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
       subItems: [
         { name: 'Büyükşehir Yetki Kontrolü', href: '/yapim/excavation-permits', icon: FileCheck },
         { name: 'Servis Kutuları', href: '/yapim/service-boxes', icon: Box },
+        { name: 'Gazlama Takip', href: '/yapim/gas-tracking', icon: Flame },
         { name: 'Yatırım İzleme', href: '/yapim/reports', icon: TrendingUp },
         { name: 'Yatırım İzleme (Harita)', href: '/yapim/investment-map', icon: MapIcon },
         { name: 'Şikayet Listesi', href: '/yapim/complaints', icon: MessageSquareWarning },

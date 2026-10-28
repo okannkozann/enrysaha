@@ -161,3 +161,65 @@ export interface FieldWorkStatus {
   completedAt?: string;
   completedBy?: string;
 }
+
+/* ── Gazlama Takip Modülü Tipleri ── */
+export type PaftaStatus = 'Hazır' | 'Bekliyor' | 'Revizyon';
+export type GasStatus = 'Gazlama Öncesi / Hazırlık' | 'Gazlandı' | 'Beklemede';
+export type StreetWorkStatus = 'Tamam' | 'Eksik';
+export type StreetGasStatus = 'Gazlandı' | 'Gazlanmadı';
+
+export interface GasConnectionObjectDetail {
+  connectionObject: string;
+  agreementDate: string; // YYYY-MM-DD
+  waitingDays: number;
+  remainingDays: number; // 90 - waitingDays
+  boxStatus: string;     // lastStatus ('Boş', '', vb.)
+  isStatusEmpty: boolean; // Son durumu boş olanlar (inşaat halinde vb. olmayanlar)
+  isBoxInstalled: boolean;
+  isGasGiven: boolean;
+  isCritical: boolean;   // waitingDays >= 75
+  isOverdue: boolean;    // waitingDays >= 90
+  streetGasStatus?: StreetGasStatus;
+  sectorGasStatus?: GasStatus;
+  address?: string;
+  customerName?: string;
+  phone?: string;
+  streetName?: string;
+  sectorCode?: string;
+  district?: string;
+  neighborhood?: string;
+}
+
+export interface GasStreetDetail {
+  id: string;
+  streetName: string;
+  connectionObjects: string[];
+  connectionDetails?: GasConnectionObjectDetail[];
+  boxCount: number;
+  workStatus: StreetWorkStatus;
+  gasStatus: StreetGasStatus;
+  gasDate?: string;
+}
+
+export interface GasSector {
+  id: string;
+  sectorCode: string;
+  sectorName?: string;
+  district: string;
+  neighborhood: string;
+  buildingCount: number;
+  totalConnectionObjects: number;
+  paftaStatus: PaftaStatus;
+  gasStatus: GasStatus;
+  targetDate: string; // YYYY-MM-DD
+  actualGasDate?: string; // YYYY-MM-DD
+  streets: GasStreetDetail[];
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  // 90 Gün Yasal Mevzuat SLA Takip Alanları:
+  criticalSlaCount?: number; // 75-90 gün arası gazlanmamış/kutusu takılmamış BNO sayısı
+  overdueSlaCount?: number;  // 90 günü aşmış gazlanmamış/kutusu takılmamış BNO sayısı
+  maxWaitingDays?: number;   // Sektördeki en eski bekleme günü
+  criticalBnos?: GasConnectionObjectDetail[];
+}

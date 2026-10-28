@@ -5,13 +5,14 @@ import { useRouter, usePathname } from 'next/navigation';
 import {
   Menu, X, LogOut, LayoutDashboard, Box,
   CheckSquare, Users, Map as MapIcon, QrCode,
-  FileText, Shield, ChevronRight, ChevronDown, FileCheck, TrendingUp, Building2, MessageSquareWarning
+  FileText, Shield, ChevronRight, ChevronDown, FileCheck, TrendingUp, Building2, MessageSquareWarning, Flame
 } from 'lucide-react';
 
 const MODULE_LINKS = [
   { name: 'Dashboard', href: '/yapim/dashboard', icon: LayoutDashboard },
   { name: 'Büyükşehir Yetki Kontrolü', href: '/yapim/excavation-permits', icon: FileCheck },
   { name: 'Servis Kutuları', href: '/yapim/service-boxes', icon: Box },
+  { name: 'Gazlama Takip', href: '/yapim/gas-tracking', icon: Flame },
   { name: 'Saha Bildirimleri', href: '/yapim/field-reports', icon: CheckSquare },
   { name: 'Ekipler', href: '/yapim/teams', icon: Users },
   { name: 'Operasyon Haritası', href: '/yapim/map', icon: MapIcon },
@@ -26,7 +27,7 @@ export function Header() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileYapimOfisOpen, setMobileYapimOfisOpen] = useState(() => {
-    return ['/yapim/excavation-permits', '/yapim/service-boxes', '/yapim/reports', '/yapim/investment-map', '/yapim/complaints'].some(path => pathname.startsWith(path));
+    return ['/yapim/excavation-permits', '/yapim/service-boxes', '/yapim/gas-tracking', '/yapim/reports', '/yapim/investment-map', '/yapim/complaints'].some(path => pathname.startsWith(path));
   });
 
   // Sayfa değiştiğinde mobil menüyü otomatik kapat
@@ -171,6 +172,7 @@ export function Header() {
                     {[
                       { name: 'Büyükşehir Yetki Kontrolü', href: '/yapim/excavation-permits', icon: FileCheck },
                       { name: 'Servis Kutuları', href: '/yapim/service-boxes', icon: Box },
+                      { name: 'Gazlama Takip', href: '/yapim/gas-tracking', icon: Flame },
                       { name: 'Yatırım İzleme', href: '/yapim/reports', icon: TrendingUp },
                       { name: 'Yatırım İzleme (Harita)', href: '/yapim/investment-map', icon: MapIcon },
                       { name: 'Şikayet Listesi', href: '/yapim/complaints', icon: MessageSquareWarning },
