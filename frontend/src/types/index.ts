@@ -1,4 +1,4 @@
-export type ServiceStatus = 'Planlandı' | 'Devam Ediyor' | 'Tamamlandı' | 'Bekliyor';
+export type ServiceStatus = 'Planlandı' | 'Devam Ediyor' | 'Tamamlandı' | 'Bekliyor' | 'Yapılabilir' | string;
 export type PriorityLevel = 'Kritik' | 'Yüksek Öncelik' | 'Takip' | 'Normal';
 export type WorkType = 'PE Ana Hat' | 'ST Çelik Hat' | 'Servis Hattı' | 'Servis Kutusu' | 'Diğer';
 export type TeamStatus = 'Aktif' | 'Tamamlandı' | 'Bekliyor';

@@ -12,8 +12,9 @@ import {
 import {
   Upload, Table2, BarChart2, Building2, Search,
   ArrowUp, ArrowDown, FileText, CheckCircle2, AlertCircle,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, FileSpreadsheet
 } from 'lucide-react';
+import { exportInvestmentTemplateStyled } from '@/lib/services/investmentExportService';
 
 function matchWaitingDayRange(days: number, range: WaitingDayRange): boolean {
   switch (range) {
@@ -35,7 +36,8 @@ const WAITING_RANGES: {
   colorDot: string;
   colorActive: string;
   colorBorder: string;
-  chartColor: string;
+  color?: string;
+  chartColor?: string;
 }[] = [
     { value: 'all', label: 'Tüm', colorDot: 'bg-slate-400', colorActive: 'bg-slate-700 border-slate-500 text-white', colorBorder: 'border-slate-700/60', color: '#94a3b8' },
     { value: '<15', label: '< 15', colorDot: 'bg-red-500', colorActive: 'bg-red-600/80 border-red-500/60 text-white', colorBorder: 'border-red-500/30', color: '#ef4444' },
@@ -80,6 +82,21 @@ export default function ServiceBoxesPage() {
 
   // Scroll Ref for Card Deck
   const cardScrollRef = useRef<HTMLDivElement>(null);
+
+  // Export State
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportTemplate = () => {
+    if (!boxes.length) return;
+    setExporting(true);
+    try {
+      exportInvestmentTemplateStyled(boxes);
+    } catch (err) {
+      console.error('Şablon export hatası:', err);
+    } finally {
+      setTimeout(() => setExporting(false), 1200);
+    }
+  };
 
   const scrollCards = (direction: 'left' | 'right') => {
     if (cardScrollRef.current) {
@@ -241,10 +258,27 @@ export default function ServiceBoxesPage() {
         </div>
 
         <div className="flex items-center justify-end gap-2 shrink-0">
+          {/* ── YATIRIM İZLEME ŞABLONU EXPORT BUTTON ── */}
+          <button
+            type="button"
+            onClick={handleExportTemplate}
+            disabled={exporting || boxes.length === 0}
+            title="Yatırım İzleme Şablonu (Excel İndir)"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-md shadow-blue-600/20 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 cursor-pointer"
+          >
+            {exporting ? (
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300 animate-pulse" />
+            ) : (
+              <FileSpreadsheet className="h-3.5 w-3.5 text-blue-200" />
+            )}
+            <span>Yatırım İzleme Şablonu</span>
+          </button>
+
+          {/* ── DOSYA EKLE BUTTON ── */}
           <button
             type="button"
             onClick={() => setImportOpen(true)}
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 shadow-md shadow-emerald-600/20 transition-all duration-200 active:scale-95 shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 shadow-md shadow-emerald-600/20 transition-all duration-200 active:scale-95 shrink-0 cursor-pointer"
           >
             <Upload className="h-3.5 w-3.5" />
             Dosya Ekle

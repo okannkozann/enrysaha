@@ -22,7 +22,7 @@ export const mockServiceBoxes: ServiceBox[] = Array.from({ length: 125 }).map((_
 
   // ~30% have empty lastStatus
   const isEmptyStatus = i % 3 === 0;
-  const statuses: ServiceStatus[] = ['Planlandı', 'Devam Ediyor', 'Bekliyor', 'Tamamlandı'];
+  const statuses: ServiceStatus[] = ['Yapılabilir', 'Planlandı', 'Devam Ediyor', 'Bekliyor', 'Tamamlandı'];
   const lastStatus = isEmptyStatus ? '' : statuses[i % statuses.length];
 
   return {
